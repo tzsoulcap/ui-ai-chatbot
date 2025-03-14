@@ -30,7 +30,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({
   activeConversationId
 }) => {
   return (
-    <Sidebar>
+    <Sidebar variant="sidebar" collapsible="offcanvas">
       <SidebarHeader>
         <Button 
           onClick={onNewChat}
