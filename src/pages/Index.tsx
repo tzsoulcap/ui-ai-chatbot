@@ -5,12 +5,7 @@ import ChatInput from '../components/Chat/ChatInput';
 import MessageLoader from '../components/Chat/MessageLoader';
 import Navbar from '../components/Layout/Navbar';
 import AppSidebar from '../components/Layout/AppSidebar';
-import { 
-  SidebarProvider, 
-  SidebarTrigger, 
-  SidebarInset,
-  SidebarRail
-} from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { Message, generateId, simulateResponse } from '../utils/chatUtils';
 import { AIModel } from '../components/Navbar/ModelSelector';
 
@@ -130,24 +125,20 @@ const Index = () => {
   
   return (
     <div className="min-h-screen flex w-full">
-      <SidebarProvider defaultOpen={true}>
+      <SidebarProvider>
         <AppSidebar 
           conversations={conversations}
           onSelectConversation={handleSelectConversation}
           onNewChat={handleNewChat}
           activeConversationId={currentConversationId}
         />
-        <SidebarRail />
         <SidebarInset className="flex flex-col bg-gradient-to-br from-purple-50 to-white">
           <div className="container mx-auto max-w-4xl flex-1 flex flex-col p-4 md:p-8">
-            <div className="flex items-center gap-2 mb-4">
-              <SidebarTrigger className="md:hidden" />
-              <Navbar 
-                selectedModel={selectedModel}
-                onModelChange={handleModelChange}
-                models={availableModels}
-              />
-            </div>
+            <Navbar 
+              selectedModel={selectedModel}
+              onModelChange={handleModelChange}
+              models={availableModels}
+            />
             
             <div className="flex-1 overflow-hidden flex flex-col">
               <div className="flex-1 overflow-y-auto px-2 py-4 subtle-scroll">
