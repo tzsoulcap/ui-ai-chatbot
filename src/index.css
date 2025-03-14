@@ -34,6 +34,14 @@
     --ring: 265 80% 70%;
 
     --radius: 0.75rem;
+
+    /* Sidebar colors */
+    --sidebar: 265 30% 99%;
+    --sidebar-foreground: 250 10% 15%;
+    --sidebar-border: 265 20% 93%;
+    --sidebar-ring: 265 80% 70%;
+    --sidebar-accent: 265 40% 94%;
+    --sidebar-accent-foreground: 265 50% 40%;
   }
 
   * {
@@ -105,4 +113,20 @@
   .loading-dots .dot:nth-child(3) {
     animation: pulse-dot 1.5s ease-in-out 0.4s infinite;
   }
+
+  @keyframes pulse-dot {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
+  }
 }
+
