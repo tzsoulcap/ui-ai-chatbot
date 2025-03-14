@@ -1,69 +1,88 @@
-# Welcome to your Lovable project
+# AI Chatbot UI
 
-## Project info
+A modern, responsive UI for an AI chatbot inspired by ChatGPT, built with React, TypeScript, and Tailwind CSS. The UI features a purple and white color theme.
 
-**URL**: https://lovable.dev/projects/3fabd981-7017-4337-8fd5-31698d86c4a8
+## Features
 
-## How can I edit this code?
+- Clean, modern interface inspired by ChatGPT
+- Purple and white color theme
+- Responsive design that works on desktop and mobile
+- Real-time chat with typing indicators
+- Code block formatting with syntax highlighting
+- Copy code functionality
+- Chat history sidebar
+- Dark mode support
+- Animated message transitions
+- Suggestion buttons for quick prompts
 
-There are several ways of editing your application.
+## Technologies Used
 
-**Use Lovable**
+- React
+- TypeScript
+- Tailwind CSS
+- Shadcn UI Components
+- Lucide React Icons
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3fabd981-7017-4337-8fd5-31698d86c4a8) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js (v14 or higher)
+- npm or yarn
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd ui-ai-chatbot
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Start the development server
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-**Use GitHub Codespaces**
+4. Open your browser and navigate to `http://localhost:5173`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Project Structure
 
-## What technologies are used for this project?
+- `src/pages/Index.tsx` - Main chatbot interface
+- `src/styles/chatbot.css` - Custom CSS for the chatbot
+- `src/components/ui/` - Reusable UI components
 
-This project is built with .
+## Customization
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Changing Colors
 
-## How can I deploy this project?
+The UI uses a purple and white color theme. You can modify the colors by:
 
-Simply open [Lovable](https://lovable.dev/projects/3fabd981-7017-4337-8fd5-31698d86c4a8) and click on Share -> Publish.
+1. Editing the Tailwind classes in `src/pages/Index.tsx`
+2. Modifying the CSS variables in `src/styles/chatbot.css`
 
-## I want to use a custom domain - is that possible?
+### Adding Features
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+To extend the chatbot functionality:
+
+1. Implement actual API calls to an AI service in the `handleSendMessage` function
+2. Add authentication if needed
+3. Implement persistent chat history storage
+
+## License
+
+[MIT](LICENSE)
+
+## Acknowledgements
+
+- Design inspired by ChatGPT
+- Icons from [Lucide React](https://lucide.dev/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
