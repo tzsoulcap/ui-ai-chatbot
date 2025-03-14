@@ -2,7 +2,7 @@
 import * as React from "react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { useSidebar, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./sidebar-context"
+import { useSidebar, SIDEBAR_WIDTH, SIDEBAR_WIDTH_MOBILE, SIDEBAR_WIDTH_ICON } from "./sidebar-context"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 
 const Sidebar = React.forwardRef<
