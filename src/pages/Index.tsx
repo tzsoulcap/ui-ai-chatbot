@@ -124,15 +124,15 @@ const Index = () => {
   };
   
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 to-white">
+    <div className="min-h-screen flex w-full">
+      <SidebarProvider>
         <AppSidebar 
           conversations={conversations}
           onSelectConversation={handleSelectConversation}
           onNewChat={handleNewChat}
           activeConversationId={currentConversationId}
         />
-        <SidebarInset>
+        <SidebarInset className="flex flex-col bg-gradient-to-br from-purple-50 to-white">
           <div className="container mx-auto max-w-4xl flex-1 flex flex-col p-4 md:p-8">
             <Navbar 
               selectedModel={selectedModel}
@@ -160,8 +160,8 @@ const Index = () => {
             </div>
           </div>
         </SidebarInset>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 };
 
