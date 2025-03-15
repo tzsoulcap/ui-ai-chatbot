@@ -8,7 +8,8 @@ import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Message, ChatHistoryItem } from "./types";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Settings } from "lucide-react";
+import { SettingsSidebar } from "./settings/SettingsSidebar";
 import "../../styles/chatbot.css";
 
 // Sample chat history
@@ -20,6 +21,7 @@ const sampleChatHistory: ChatHistoryItem[] = [
 
 // Sidebar width in pixels - used for calculations
 const SIDEBAR_WIDTH = 256; // 16rem = 256px
+const SETTINGS_SIDEBAR_WIDTH = 320; // 20rem = 320px
 
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -27,6 +29,7 @@ export const ChatContainer = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [settingsSidebarOpen, setSettingsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gpt-3.5-turbo"); // Default model
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -62,6 +65,19 @@ export const ChatContainer = () => {
   // Toggle sidebar
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+    // Close settings sidebar when opening chat sidebar on mobile
+    if (isMobile && !sidebarOpen) {
+      setSettingsSidebarOpen(false);
+    }
+  };
+
+  // Toggle settings sidebar
+  const toggleSettingsSidebar = () => {
+    setSettingsSidebarOpen(!settingsSidebarOpen);
+    // Close chat sidebar when opening settings sidebar on mobile
+    if (isMobile && !settingsSidebarOpen) {
+      setSidebarOpen(false);
+    }
   };
 
   // Handle model change
@@ -131,7 +147,7 @@ export const ChatContainer = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
-      {/* Sidebar - fixed on mobile, absolute on desktop */}
+      {/* Chat Sidebar - fixed on mobile, absolute on desktop */}
       <aside 
         className={`
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
@@ -150,11 +166,27 @@ export const ChatContainer = () => {
         />
       </aside>
 
+      {/* Settings Sidebar - fixed on mobile, absolute on desktop */}
+      <aside 
+        className={`
+          ${settingsSidebarOpen ? 'translate-x-0' : 'translate-x-full'} 
+          transition-transform duration-300 ease-in-out
+          fixed md:absolute top-0 right-0 bottom-0 z-20
+          bg-white dark:bg-gray-900 shadow-lg
+        `}
+        style={{ width: SETTINGS_SIDEBAR_WIDTH }}
+      >
+        <SettingsSidebar onClose={() => setSettingsSidebarOpen(false)} />
+      </aside>
+
       {/* Overlay for mobile */}
-      {sidebarOpen && isMobile && (
+      {(sidebarOpen || settingsSidebarOpen) && isMobile && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-10 overlay-fade-in"
-          onClick={toggleSidebar}
+          onClick={() => {
+            setSidebarOpen(false);
+            setSettingsSidebarOpen(false);
+          }}
         />
       )}
 
@@ -163,15 +195,17 @@ export const ChatContainer = () => {
         className="absolute inset-0 flex flex-col transition-all duration-300 ease-in-out"
         style={{ 
           left: isMobile ? 0 : (sidebarOpen ? SIDEBAR_WIDTH : 0),
-          right: 0
+          right: isMobile ? 0 : (settingsSidebarOpen ? SETTINGS_SIDEBAR_WIDTH : 0)
         }}
       >
-        {/* Use Header component with model selector */}
+        {/* Use Header component */}
         <Header 
           sidebarOpen={sidebarOpen} 
           toggleSidebar={toggleSidebar} 
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
+          settingsSidebarOpen={settingsSidebarOpen}
+          toggleSettingsSidebar={toggleSettingsSidebar}
         />
 
         {/* Chat messages */}
