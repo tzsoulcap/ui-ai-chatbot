@@ -1,159 +1,202 @@
-
-import { useState } from "react";
-import { MenuIcon, X } from "lucide-react";
-import { Sidebar } from "./Sidebar";
-import { ChatInput } from "./ChatInput";
+import { useState, useRef, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "./ChatMessage";
-import { Header } from "./Header";
+import { LoadingIndicator } from "./LoadingIndicator";
 import { WelcomeScreen } from "./WelcomeScreen";
-import { ModelSelector } from "./ModelSelector";
-import { SettingsSidebar } from "./settings/SettingsSidebar";
-import { Button } from "../ui/button";
+import { ChatInput } from "./ChatInput";
+import { Sidebar } from "./Sidebar";
+import { Header } from "./Header";
 import { Message, ChatHistoryItem } from "./types";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import "../../styles/chatbot.css";
+
+// Sample chat history
+const sampleChatHistory: ChatHistoryItem[] = [
+  { id: "1", title: "Introduction to AI", date: new Date() },
+  { id: "2", title: "Help with coding", date: new Date(Date.now() - 86400000) },
+  { id: "3", title: "Data analysis questions", date: new Date(Date.now() - 172800000) },
+];
+
+// Sidebar width in pixels - used for calculations
+const SIDEBAR_WIDTH = 256; // 16rem = 256px
 
 export const ChatContainer = () => {
-  // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [activeChat, setActiveChat] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [settingsSidebarOpen, setSettingsSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gpt-3.5-turbo"); // Default model
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Message handlers
-  const handleSendMessage = (content: string) => {
+  // Check if mobile on mount and when window resizes
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
+      // Auto-close sidebar on mobile
+      if (isMobileView) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    // Check initially
+    checkIfMobile();
+
+    // Add event listener
+    window.addEventListener('resize', checkIfMobile);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  // Handle model change
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    // ในกรณีจริง อาจมีการเรียก API หรือทำการตั้งค่าอื่นๆ เมื่อเปลี่ยน model
+    console.log(`Model changed to: ${modelId}`);
+  };
+
+  // Handle sending a message
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+
+    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      content,
+      content: input,
       role: "user",
       timestamp: new Date(),
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setLoading(true);
-    
-    // Simulate AI response
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    // Simulate AI response after a delay
     setTimeout(() => {
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: `I received your message: "${content}"`,
+        content: `[Using ${selectedModel}] This is a sample response from the AI assistant. In a real application, this would be replaced with an actual API call to get a response from the AI model.\n\nHere's a code example:\n\`\`\`javascript\nconst greeting = 'Hello, World!';\nconsole.log(greeting);\n\`\`\``,
         role: "assistant",
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, aiMessage]);
-      setLoading(false);
-    }, 1000);
+      setMessages((prev) => [...prev, aiMessage]);
+      setIsLoading(false);
+    }, 1500);
   };
-  
-  // Chat history handlers
-  const handleNewChat = () => {
-    const newChatId = Date.now().toString();
-    const newChat: ChatHistoryItem = {
-      id: newChatId,
-      title: "New Conversation",
-      date: new Date(),
-    };
-    
-    setChatHistory(prev => [newChat, ...prev]);
-    setActiveChat(newChatId);
+
+  // Clear chat history
+  const handleClearChat = () => {
     setMessages([]);
-    setSidebarOpen(false);
+    setActiveChat(null);
   };
-  
+
+  // Start a new chat
+  const handleNewChat = () => {
+    setMessages([]);
+    setActiveChat(null);
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
+  };
+
+  // Handle chat selection
   const handleChatSelect = (chatId: string) => {
     setActiveChat(chatId);
-    // In a real app, you would load messages for this chat
+    // In a real app, you would load the messages for this chat
+    // For now, we'll just clear the current messages
     setMessages([]);
-    setSidebarOpen(false);
-  };
-  
-  const handleClearChats = () => {
-    setChatHistory([]);
-    setActiveChat(null);
-    setMessages([]);
-  };
-  
-  const toggleSidebar = () => setSidebarOpen(prev => !prev);
-  const toggleSettingsSidebar = () => {
-    setSettingsSidebarOpen(prev => !prev);
-    setSidebarOpen(false);
+    // On mobile, close the sidebar after selecting a chat
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
   };
 
   return (
-    <div className="h-full flex flex-col relative">
-      <Header 
-        onMenuClick={toggleSidebar} 
-        onSettingsClick={toggleSettingsSidebar}
-      />
-      
-      <div className="flex-grow flex overflow-hidden relative">
-        {/* Chat history sidebar */}
+    <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
+      {/* Sidebar - fixed on mobile, absolute on desktop */}
+      <aside 
+        className={`
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+          transition-transform duration-300 ease-in-out
+          fixed md:absolute top-0 left-0 bottom-0 z-20
+          bg-purple-50 dark:bg-gray-800 shadow-lg
+        `}
+        style={{ width: SIDEBAR_WIDTH }}
+      >
+        <Sidebar 
+          chatHistory={sampleChatHistory}
+          activeChat={activeChat}
+          onChatSelect={handleChatSelect}
+          onNewChat={handleNewChat}
+          onClearChats={handleClearChat}
+        />
+      </aside>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && isMobile && (
         <div 
-          className={`absolute z-10 inset-y-0 left-0 transform ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
-            sidebarOpen ? 'w-64' : 'w-0 md:w-64'
-          }`}
-        >
-          <Sidebar
-            chatHistory={chatHistory}
-            activeChat={activeChat}
-            onChatSelect={handleChatSelect}
-            onNewChat={handleNewChat}
-            onClearChats={handleClearChats}
-          />
-        </div>
-        
-        {/* Settings sidebar */}
-        <div 
-          className={`absolute z-10 inset-y-0 right-0 transform ${
-            settingsSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-          } transition-transform duration-300 ease-in-out md:relative ${
-            settingsSidebarOpen ? 'w-80' : 'w-0'
-          }`}
-        >
-          <SettingsSidebar onClose={() => setSettingsSidebarOpen(false)} />
-        </div>
-        
-        {/* Main chat area */}
-        <div className={`flex-grow flex flex-col relative ${
-          (sidebarOpen ? 'md:ml-64' : '') || (settingsSidebarOpen ? 'md:mr-80' : '')
-        }`}>
-          {/* Mobile backdrop overlay */}
-          {(sidebarOpen || settingsSidebarOpen) && (
-            <div 
-              className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-0"
-              onClick={() => {
-                setSidebarOpen(false);
-                setSettingsSidebarOpen(false);
-              }}
-            />
-          )}
-          
-          {/* Chat content */}
-          <div className="flex-grow overflow-y-auto p-4 chat-scrollbar">
-            {messages.length === 0 ? (
-              <WelcomeScreen />
-            ) : (
-              messages.map((message) => (
+          className="fixed inset-0 bg-black bg-opacity-50 z-10 overlay-fade-in"
+          onClick={toggleSidebar}
+        />
+      )}
+
+      {/* Main chat area - takes full width and adjusts position based on sidebar */}
+      <main 
+        className="absolute inset-0 flex flex-col transition-all duration-300 ease-in-out"
+        style={{ 
+          left: isMobile ? 0 : (sidebarOpen ? SIDEBAR_WIDTH : 0),
+          right: 0
+        }}
+      >
+        {/* Use Header component with model selector */}
+        <Header 
+          sidebarOpen={sidebarOpen} 
+          toggleSidebar={toggleSidebar} 
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
+        />
+
+        {/* Chat messages */}
+        <ScrollArea className="flex-1 p-4 chat-scrollbar">
+          {messages.length === 0 ? (
+            <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
+          ) : (
+            <div className="space-y-6">
+              {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
-              ))
-            )}
-          </div>
-          
-          {/* Chat input and model selector */}
-          <div className="p-4 border-t border-purple-200 dark:border-purple-800 bg-white dark:bg-gray-900">
-            <ModelSelector />
-            <ChatInput 
-              onSendMessage={handleSendMessage} 
-              isLoading={loading} 
-            />
-          </div>
-        </div>
-      </div>
+              ))}
+              {isLoading && <LoadingIndicator />}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </ScrollArea>
+
+        {/* Input area */}
+        <ChatInput 
+          input={input}
+          setInput={setInput}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+        />
+      </main>
     </div>
   );
-};
+}; 
