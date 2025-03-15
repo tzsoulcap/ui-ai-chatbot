@@ -1,7 +1,12 @@
+
 import { ChatContainer } from "@/components/chatbot/ChatContainer";
 
 const Index = () => {
-  return <ChatContainer />;
+  return (
+    <div className="h-screen w-full flex flex-col">
+      <ChatContainer />
+    </div>
+  );
 };
 
-export default Index; 
+export default Index;

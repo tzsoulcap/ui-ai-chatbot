@@ -1,3 +1,4 @@
+
 // Message type definition
 export interface Message {
   id: string;
@@ -11,4 +12,13 @@ export interface ChatHistoryItem {
   id: string;
   title: string;
   date: Date;
-} 
+}
+
+// Document type for Knowledge Management
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  date: string;
+}
