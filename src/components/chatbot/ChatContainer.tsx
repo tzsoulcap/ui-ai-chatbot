@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "./ChatMessage";
 import { LoadingIndicator } from "./LoadingIndicator";
@@ -6,10 +7,14 @@ import { WelcomeScreen } from "./WelcomeScreen";
 import { ChatInput } from "./ChatInput";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
+import { Navbar } from "./Navbar";
 import { Message, ChatHistoryItem } from "./types";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Settings } from "lucide-react";
+import { X } from "lucide-react";
 import { SettingsSidebar } from "./settings/SettingsSidebar";
+import { KnowledgeManager } from "./knowledge/KnowledgeManager";
+import { Studio } from "./studio/Studio";
+import { ProjectConfig } from "./studio/ProjectConfig";
 import "../../styles/chatbot.css";
 
 // Sample chat history
@@ -19,20 +24,64 @@ const sampleChatHistory: ChatHistoryItem[] = [
   { id: "3", title: "Data analysis questions", date: new Date(Date.now() - 172800000) },
 ];
 
+// Sample projects data
+const sampleProjects = [
+  {
+    id: "1",
+    title: "Knowledge Retrieval + Chatbot",
+    type: "chatbot",
+  },
+  {
+    id: "2",
+    title: "Chatbot",
+    type: "chatbot",
+    description: "test chatbot feature",
+  },
+  {
+    id: "3",
+    title: "Customer Support Agent",
+    type: "agent",
+  },
+  {
+    id: "4",
+    title: "Data Processing Workflow",
+    type: "workflow",
+  },
+];
+
 // Sidebar width in pixels - used for calculations
 const SIDEBAR_WIDTH = 256; // 16rem = 256px
 const SETTINGS_SIDEBAR_WIDTH = 320; // 20rem = 320px
 
-export const ChatContainer = () => {
+interface ChatContainerProps {
+  initialView?: "chat" | "studio" | "knowledge" | "project-config";
+}
+
+export const ChatContainer = ({ initialView = "chat" }: ChatContainerProps) => {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsSidebarOpen, setSettingsSidebarOpen] = useState(false);
+  const [knowledgeManagerOpen, setKnowledgeManagerOpen] = useState(initialView === "knowledge");
+  const [studioOpen, setStudioOpen] = useState(initialView === "studio");
   const [isMobile, setIsMobile] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gpt-3.5-turbo"); // Default model
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Find project by ID if we're in project-config view
+  const currentProject = projectId ? sampleProjects.find(p => p.id === projectId) : null;
+
+  // Log for debugging
+  useEffect(() => {
+    console.log("initialView:", initialView);
+    console.log("projectId:", projectId);
+    console.log("currentProject:", currentProject);
+  }, [initialView, projectId, currentProject]);
 
   // Check if mobile on mount and when window resizes
   useEffect(() => {
@@ -74,10 +123,52 @@ export const ChatContainer = () => {
   // Toggle settings sidebar
   const toggleSettingsSidebar = () => {
     setSettingsSidebarOpen(!settingsSidebarOpen);
-    // Close chat sidebar when opening settings sidebar on mobile
-    if (isMobile && !settingsSidebarOpen) {
-      setSidebarOpen(false);
+    // Close other panels
+    if (!settingsSidebarOpen) {
+      setKnowledgeManagerOpen(false);
+      setStudioOpen(false);
+      // Close chat sidebar when opening settings sidebar on mobile
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
     }
+  };
+
+  // Toggle knowledge manager
+  const toggleKnowledgeManager = () => {
+    if (knowledgeManagerOpen) {
+      setKnowledgeManagerOpen(false);
+      navigate('/');
+    } else {
+      setKnowledgeManagerOpen(true);
+      setStudioOpen(false);
+      navigate('/knowledge');
+      // Close chat sidebar when opening knowledge manager on mobile
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+    }
+  };
+
+  // Toggle studio
+  const toggleStudio = () => {
+    if (studioOpen) {
+      setStudioOpen(false);
+      navigate('/');
+    } else {
+      setStudioOpen(true);
+      setKnowledgeManagerOpen(false);
+      navigate('/apps');
+      // Close chat sidebar when opening studio on mobile
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+    }
+  };
+
+  // Handle back from project config
+  const handleBackFromProjectConfig = () => {
+    navigate('/');
   };
 
   // Handle model change
@@ -145,6 +236,24 @@ export const ChatContainer = () => {
     }
   };
 
+  // Handle project click in Studio
+  const handleProjectClick = (projectId: string) => {
+    navigate(`/app/${projectId}/configuration`);
+  };
+
+  // If we're in project-config view and have a valid project, show the ProjectConfig component
+  if (initialView === "project-config" && currentProject) {
+    return (
+      <ProjectConfig 
+        projectId={currentProject.id}
+        projectTitle={currentProject.title}
+        projectType={currentProject.type}
+        onBack={handleBackFromProjectConfig}
+      />
+    );
+  }
+
+  // Main chat interface
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
       {/* Chat Sidebar - fixed on mobile, absolute on desktop */}
@@ -198,10 +307,16 @@ export const ChatContainer = () => {
           right: isMobile ? 0 : (settingsSidebarOpen ? SETTINGS_SIDEBAR_WIDTH : 0)
         }}
       >
-        {/* Use Header component */}
-        <Header 
+        {/* Navbar with toggle sidebar button */}
+        <Navbar 
           sidebarOpen={sidebarOpen} 
           toggleSidebar={toggleSidebar} 
+          isStudioActive={studioOpen}
+          isKnowledgeActive={knowledgeManagerOpen}
+        />
+        
+        {/* Header with model selector and action buttons */}
+        <Header 
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
           settingsSidebarOpen={settingsSidebarOpen}
