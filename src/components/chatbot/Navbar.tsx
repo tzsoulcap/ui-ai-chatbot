@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, Database, Layers } from "lucide-react";
+import { Menu, X, Database, Layers, MessageSquare } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 interface NavbarProps {
@@ -7,24 +7,26 @@ interface NavbarProps {
   toggleSidebar: () => void;
   isStudioActive?: boolean;
   isKnowledgeActive?: boolean;
+  isTestAgentActive?: boolean;
 }
 
 export const Navbar = ({ 
   sidebarOpen, 
   toggleSidebar, 
   isStudioActive = false,
-  isKnowledgeActive = false
+  isKnowledgeActive = false,
+  isTestAgentActive = false
 }: NavbarProps) => {
   const navigate = useNavigate();
 
   return (
-    <nav className="border-b border-purple-200 dark:border-purple-800 p-3 flex items-center justify-between bg-white dark:bg-gray-900 z-10">
+    <nav className="border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between bg-white dark:bg-gray-900 z-10">
       <div className="flex items-center">
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="mr-2 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900"
+          className="mr-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
         >
           {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
@@ -34,11 +36,27 @@ export const Navbar = ({
           <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center mr-2">
             <span className="text-white font-semibold text-sm">AI</span>
           </div>
-          <h1 className="text-lg font-semibold text-purple-700 dark:text-purple-300">AI Chatbot</h1>
+          <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">AI Chatbot</h1>
         </Link>
       </div>
 
       <div className="flex items-center">
+        {/* Test Agent Button */}
+        <Button
+          variant={isTestAgentActive ? "default" : "ghost"}
+          size="sm"
+          onClick={() => navigate("/test-agent")}
+          className={`mr-2 flex items-center ${
+            isTestAgentActive 
+              ? "bg-purple-600 hover:bg-purple-700 text-white" 
+              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+          aria-label="Test Agent"
+        >
+          <MessageSquare size={18} className="mr-1" />
+          <span>Test Agent</span>
+        </Button>
+
         {/* Studio Button */}
         <Button
           variant={isStudioActive ? "default" : "ghost"}
@@ -47,7 +65,7 @@ export const Navbar = ({
           className={`mr-2 flex items-center ${
             isStudioActive 
               ? "bg-purple-600 hover:bg-purple-700 text-white" 
-              : "text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900"
+              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           }`}
           aria-label="Open Studio"
         >
@@ -63,7 +81,7 @@ export const Navbar = ({
           className={`flex items-center ${
             isKnowledgeActive 
               ? "bg-purple-600 hover:bg-purple-700 text-white" 
-              : "text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900"
+              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           }`}
           aria-label="Open Knowledge Manager"
         >

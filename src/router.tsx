@@ -5,6 +5,7 @@ import { KnowledgeManager } from "./components/chatbot/knowledge/KnowledgeManage
 import { ProjectConfig } from "./components/chatbot/studio/ProjectConfig";
 import { AppPreview } from "./components/chatbot/studio/AppPreview";
 import { Navbar } from "./components/chatbot/Navbar";
+import { TestAgent } from "./components/chatbot/TestAgent";
 import { useNavigate, useParams } from "react-router-dom";
 
 // Wrapper components for each route
@@ -38,6 +39,15 @@ const KnowledgePage = () => {
       <div className="h-[calc(100%-56px)]">
         <KnowledgeManager />
       </div>
+    </div>
+  );
+};
+
+// Test Agent Page
+const TestAgentPage = () => {
+  return (
+    <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
+      <TestAgent />
     </div>
   );
 };
@@ -105,6 +115,10 @@ export const router = createBrowserRouter([
   {
     path: "/knowledge",
     element: <KnowledgePage />,
+  },
+  {
+    path: "/test-agent",
+    element: <TestAgentPage />,
   },
   {
     path: "/app/:projectId/configuration",
