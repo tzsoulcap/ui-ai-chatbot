@@ -15,7 +15,7 @@ declare global {
   }
 }
 
-export const TestAgent = () => {
+export const TestNotionRAG = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<TestAgentMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -60,8 +60,9 @@ export const TestAgent = () => {
   // Call the API to get AI response
   const getAIResponse = async (question: string) => {
     try {
-      const response = await axios.post('https://anchovy-bold-wasp.ngrok-free.app/api/v1/combined/ask', {
-        question
+      const response = await axios.post('https://anchovy-bold-wasp.ngrok-free.app/api/v1/rag/query', {
+        question,
+        k: 3
       }, {
         headers: {
           'Content-Type': 'application/json'
@@ -102,7 +103,7 @@ export const TestAgent = () => {
         role: "assistant",
         content: aiResponse.result,
         timestamp: new Date(),
-        chartSpec: aiResponse.chart_spec,
+
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -156,7 +157,7 @@ export const TestAgent = () => {
       <Navbar 
         sidebarOpen={sidebarOpen} 
         toggleSidebar={toggleSidebar} 
-        isTestAgentActive={true}
+        isTestNotionRAGActive={true}
       />
 
       <div className="flex-1 flex justify-center overflow-hidden">
@@ -164,7 +165,7 @@ export const TestAgent = () => {
           {/* Header */}
           <header className="border-b border-gray-100 dark:border-gray-800 p-3 flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-xl font-medium text-gray-800 dark:text-gray-200">Test Agent</h1>
+              <h1 className="text-xl font-medium text-gray-800 dark:text-gray-200">Test Notion RAG</h1>
             </div>
             <Button 
               variant="ghost" 

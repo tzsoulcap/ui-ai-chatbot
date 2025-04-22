@@ -8,6 +8,7 @@ interface NavbarProps {
   isStudioActive?: boolean;
   isKnowledgeActive?: boolean;
   isTestAgentActive?: boolean;
+  isTestNotionRAGActive?: boolean;
 }
 
 export const Navbar = ({ 
@@ -15,7 +16,8 @@ export const Navbar = ({
   toggleSidebar, 
   isStudioActive = false,
   isKnowledgeActive = false,
-  isTestAgentActive = false
+  isTestAgentActive = false,
+  isTestNotionRAGActive = false
 }: NavbarProps) => {
   const navigate = useNavigate();
 
@@ -41,6 +43,22 @@ export const Navbar = ({
       </div>
 
       <div className="flex items-center">
+        {/* Test Notion RAG Button */}
+        <Button
+          variant={isTestNotionRAGActive ? "default" : "ghost"}
+          size="sm"
+          onClick={() => navigate("/test-notion-rag")}
+          className={`mr-2 flex items-center ${
+            isTestNotionRAGActive 
+              ? "bg-purple-600 hover:bg-purple-700 text-white" 
+              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+          aria-label="Test Notion RAG"
+        >
+          <MessageSquare size={18} className="mr-1" />
+          <span>Test Notion RAG</span>
+        </Button>
+        
         {/* Test Agent Button */}
         <Button
           variant={isTestAgentActive ? "default" : "ghost"}

@@ -6,6 +6,7 @@ import { ProjectConfig } from "./components/chatbot/studio/ProjectConfig";
 import { AppPreview } from "./components/chatbot/studio/AppPreview";
 import { Navbar } from "./components/chatbot/Navbar";
 import { TestAgent } from "./components/chatbot/TestAgent";
+import { TestNotionRAG } from "./components/chatbot/TestNotionRAG";
 import { useNavigate, useParams } from "react-router-dom";
 
 // Wrapper components for each route
@@ -48,6 +49,15 @@ const TestAgentPage = () => {
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
       <TestAgent />
+    </div>
+  );
+};
+
+// Test Notion RAG Page
+const TestNotionRAGPage = () => {
+  return (
+    <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
+      <TestNotionRAG />
     </div>
   );
 };
@@ -119,6 +129,10 @@ export const router = createBrowserRouter([
   {
     path: "/test-agent",
     element: <TestAgentPage />,
+  },
+  {
+    path: "/test-notion-rag",
+    element: <TestNotionRAGPage />,
   },
   {
     path: "/app/:projectId/configuration",
