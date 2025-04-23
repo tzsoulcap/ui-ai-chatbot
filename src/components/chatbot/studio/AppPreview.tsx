@@ -18,17 +18,48 @@ interface AppPreviewProps {
 }
 
 export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content: `Hello! I'm the ${projectTitle} assistant. How can I help you today?`,
-      role: "assistant",
-      timestamp: new Date(),
-    },
-  ]);
+  const [userParams, setUserParams] = useState<{
+    userId?: string;
+    userRole?: string;
+    userName?: string;
+  }>({});
+
+  // Extract URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const userId = searchParams.get('userId') || undefined;
+    const userRole = searchParams.get('userRole') || undefined;
+    const userName = searchParams.get('userName') || undefined;
+    
+    setUserParams({ userId, userRole, userName });
+  }, []);
+
+  // Generate greeting message based on user role
+  const getGreetingMessage = () => {
+    if (userParams.userRole) {
+      return `Hello ${userParams.userName ? userParams.userName : ''}! I'm the ${projectTitle} assistant for ${userParams.userRole}s. How can I help you today?`;
+    }
+    return `Hello! I'm the ${projectTitle} assistant. How can I help you today?`;
+  };
+
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Set initial greeting message after URL params are loaded
+  useEffect(() => {
+    if (Object.keys(userParams).length > 0) {
+      setMessages([
+        {
+          id: "1",
+          content: getGreetingMessage(),
+          role: "assistant",
+          timestamp: new Date(),
+        }
+      ]);
+    }
+  }, [userParams, projectTitle]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -98,10 +129,13 @@ export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps)
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
         <div className="flex items-center">
-
           <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">{projectTitle}</h1>
+          {userParams.userRole && (
+            <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs rounded-full">
+              {userParams.userRole}
+            </span>
+          )}
         </div>
-
       </header>
       
       {/* Chat area */}
