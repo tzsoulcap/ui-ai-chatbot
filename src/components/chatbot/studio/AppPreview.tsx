@@ -11,6 +11,13 @@ interface Message {
   citations?: string[];
 }
 
+interface UserInfo {
+  token?: string;
+  role?: string;
+  isVerified?: boolean;
+  verifiedRole?: string;
+}
+
 interface AppPreviewProps {
   projectId: string;
   projectTitle: string;
@@ -18,28 +25,105 @@ interface AppPreviewProps {
 }
 
 export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps) => {
-  const [userParams, setUserParams] = useState<{
-    userId?: string;
-    userRole?: string;
-    userName?: string;
-  }>({});
+  const [userParams, setUserParams] = useState<UserInfo>({});
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  // Extract URL parameters
+  // Listen for postMessage events
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const userId = searchParams.get('userId') || undefined;
-    const userRole = searchParams.get('userRole') || undefined;
-    const userName = searchParams.get('userName') || undefined;
-    
-    setUserParams({ userId, userRole, userName });
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin for security (adjust to match your requirements)
+      // You might want to make this configurable or more specific in production
+      // const allowedOrigins = ['http://localhost:3000', 'https://yourdomain.com'];
+      // if (!allowedOrigins.includes(event.origin)) return;
+
+      if (event.data && event.data.type === "CREDENTIALS") {
+        const { token, role, userName } = event.data;
+        setUserParams({ token, role });
+        
+        // Verify token and role with the API
+        verifyToken(token, role);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // Generate greeting message based on user role
-  const getGreetingMessage = () => {
-    if (userParams.userRole) {
-      return `Hello ${userParams.userName ? userParams.userName : ''}! I'm the ${projectTitle} assistant for ${userParams.userRole}s. How can I help you today?`;
+  // Function to verify token with API
+  const verifyToken = async (token?: string, role?: string) => {
+    if (!token || !role) return;
+    
+    setIsVerifying(true);
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, role }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.valid) {
+        setUserParams(prev => ({
+          ...prev,
+          isVerified: true,
+          verifiedRole: data.role
+        }));
+      } else {
+        // Handle invalid token
+        setUserParams(prev => ({
+          ...prev,
+          isVerified: false
+        }));
+      }
+    } catch (error) {
+      console.error('Error verifying token:', error);
+      setUserParams(prev => ({
+        ...prev,
+        isVerified: false
+      }));
+    } finally {
+      setIsVerifying(false);
     }
-    return `Hello! I'm the ${projectTitle} assistant. How can I help you today?`;
+  };
+
+  // Generate greeting message based on user role and include token if available
+  const getGreetingMessage = () => {
+    // If verification is in progress
+    if (isVerifying) {
+      return `Verifying your credentials...`;
+    }
+    
+    // If verification has completed
+    if (userParams.isVerified !== undefined) {
+      if (userParams.isVerified) {
+        const role = userParams.verifiedRole || userParams.role || '';
+        
+        let greeting = `Hello `;
+        greeting += `I'm the ${projectTitle} assistant for ${role}s.`;
+        greeting += " How can I help you today?";
+        
+        return greeting;
+      } else {
+        return `Authentication failed. Please check your credentials and try again.`;
+      }
+    }
+    
+    // Default greeting before verification
+    let greeting = `Hello `;
+    
+    if (userParams.role) {
+      greeting += `I'm the ${projectTitle} assistant for ${userParams.role}s.`;
+    } else {
+      greeting += `I'm the ${projectTitle} assistant.`;
+    }
+    
+    greeting += " How can I help you today?";
+    
+    return greeting;
   };
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,19 +131,18 @@ export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps)
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Set initial greeting message after URL params are loaded
+  // Set initial greeting message after postMessage data is received
   useEffect(() => {
-    if (Object.keys(userParams).length > 0) {
-      setMessages([
-        {
-          id: "1",
-          content: getGreetingMessage(),
-          role: "assistant",
-          timestamp: new Date(),
-        }
-      ]);
-    }
-  }, [userParams, projectTitle]);
+    // Only update greeting if we have received some data or on initial load
+    setMessages([
+      {
+        id: "1",
+        content: getGreetingMessage(),
+        role: "assistant",
+        timestamp: new Date(),
+      }
+    ]);
+  }, [userParams, projectTitle, isVerifying]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -130,9 +213,19 @@ export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps)
       <header className="border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
         <div className="flex items-center">
           <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">{projectTitle}</h1>
-          {userParams.userRole && (
+          {userParams.isVerified && userParams.verifiedRole && (
+            <span className="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded-full">
+              {userParams.verifiedRole}
+            </span>
+          )}
+          {userParams.role && !userParams.isVerified && (
             <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs rounded-full">
-              {userParams.userRole}
+              {userParams.role} {isVerifying && "(Verifying...)"}
+            </span>
+          )}
+          {userParams.isVerified === false && (
+            <span className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs rounded-full">
+              Authentication Failed
             </span>
           )}
         </div>
@@ -244,6 +337,7 @@ export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps)
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
               style={{ minHeight: "44px", maxHeight: "120px" }}
+              disabled={userParams.isVerified === false}
             />
             
             <Button 
@@ -251,7 +345,7 @@ export const AppPreview = ({ projectId, projectTitle, onBack }: AppPreviewProps)
               size="sm" 
               className="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 dark:text-purple-400"
               onClick={handleSendMessage}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || userParams.isVerified === false}
             >
               <Send size={18} />
             </Button>

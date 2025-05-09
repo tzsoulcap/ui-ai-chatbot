@@ -97,10 +97,21 @@ export const TestAgent = () => {
       // Call API to get AI response
       const aiResponse = await getAIResponse(userMessage.content);
       
+      // กรองข้อความ SQL ออกจากผลลัพธ์
+      let result = aiResponse.result;
+      
+      // ลบข้อความที่เป็น SQL pattern ต่างๆ
+      // ลบข้อความที่อยู่ระหว่าง ```sql และ ``` 
+      result = result.replace(/SQL query:/g, '');
+      result = result.replace(/```sql[\s\S]*?```/g, '');
+      
+      // ลบข้อความที่ขึ้นต้นด้วย SELECT, INSERT, UPDATE, DELETE, CREATE TABLE
+      result = result.replace(/(SELECT|INSERT|UPDATE|DELETE|CREATE TABLE)[\s\S]*?(;|\n\n)/gi, '');
+      
       const aiMessage: TestAgentMessage = {
         id: Date.now().toString(),
         role: "assistant",
-        content: aiResponse.result,
+        content: result.trim(),
         timestamp: new Date(),
         chartSpec: aiResponse.chart_spec,
       };
@@ -164,7 +175,7 @@ export const TestAgent = () => {
           {/* Header */}
           <header className="border-b border-gray-100 dark:border-gray-800 p-3 flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-xl font-medium text-gray-800 dark:text-gray-200">Test Agent</h1>
+              <h1 className="text-xl font-medium text-gray-800 dark:text-gray-200">AI Assistant</h1>
             </div>
             <Button 
               variant="ghost" 
