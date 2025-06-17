@@ -38,15 +38,12 @@ export const Sidebar = ({
         </h3>
         {chatHistory.map((chat) => (
           <div 
-            key={chat.id}
-            className={`p-2 mb-1 cursor-pointer chat-history-item ${activeChat === chat.id ? 'active' : ''}`}
-            onClick={() => onChatSelect(chat.id)}
+            key={chat.conversation_id}
+            className={`p-2 mb-1 cursor-pointer chat-history-item ${activeChat === chat.conversation_id ? 'active' : ''}`}
+            onClick={() => onChatSelect(chat.conversation_id)}
           >
             <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
               {chat.title}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {chat.date.toLocaleDateString()}
             </div>
           </div>
         ))}

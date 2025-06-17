@@ -7,6 +7,7 @@ import { AppPreview } from "./components/chatbot/studio/AppPreview";
 import { Navbar } from "./components/chatbot/Navbar";
 import { TestAgent } from "./components/chatbot/TestAgent";
 import { TestNotionRAG } from "./components/chatbot/TestNotionRAG";
+import MainChat from "./pages/MainChat";
 import { useNavigate, useParams } from "react-router-dom";
 
 // Wrapper components for each route
@@ -117,6 +118,10 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <ChatContainer initialView="chat" />,
+  },
+  {
+    path: "/main-chat",
+    element: <MainChat />,
   },
   {
     path: "/apps",
