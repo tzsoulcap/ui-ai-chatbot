@@ -223,40 +223,6 @@ export const ChartRenderer = ({ type, data, keys, indexBy, width = 600, height =
         </div>
       );
 
-    case 'heatmap':
-      return (
-        <div style={{ width, height }}>
-          <ResponsiveHeatMap
-            data={data}
-            margin={{ top: 60, right: 90, bottom: 60, left: 90 }}
-            forceSquare={true}
-            axisTop={null}
-            axisRight={null}
-            colors={{
-              type: 'sequential',
-              scheme: 'blues'
-            }}
-            labelTextColor={{ from: 'color', modifiers: [['darker', 2]] }}
-            animate={true}
-            hoverTarget="cell"
-            tooltip={({ x, y, value }) => (
-              <div
-                style={{
-                  background: 'white',
-                  padding: '9px 12px',
-                  border: '1px solid #ccc',
-                }}
-              >
-                <strong>
-                  {x} / {y}
-                </strong>
-                <br />
-                {value}
-              </div>
-            )}
-          />
-        </div>
-      );
 
     default:
       return null;

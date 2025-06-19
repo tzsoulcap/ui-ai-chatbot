@@ -65,6 +65,7 @@ const MainChat = ({ initialView = "chat" }: MainChatProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isNotionRagActive, setIsNotionRagActive] = useState(false);
 
   // Find project by ID if we're in project-config view
   const currentProject = projectId ? sampleProjects.find(p => p.id === projectId) : null;
@@ -227,10 +228,45 @@ const MainChat = ({ initialView = "chat" }: MainChatProps) => {
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
+    let conversationId = activeChat;
+    // If no active conversation, create one first
+    if (!conversationId) {
+      try {
+        const createRes = await fetch('http://192.168.50.119:5678/webhook/conversations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          mode: 'cors',
+          body: JSON.stringify({ title: input, user_id: '38137' }),
+        });
+        if (!createRes.ok) throw new Error('Failed to create conversation');
+        const newConvos = await createRes.json();
+        let newConversation = null;
+        if (Array.isArray(newConvos) && newConvos.length > 0) {
+          newConversation = newConvos[0];
+        } else if (newConvos && newConvos.conversation_id) {
+          newConversation = newConvos;
+        }
+        if (newConversation) {
+          conversationId = newConversation.conversation_id;
+          setActiveChat(conversationId);
+          setChatHistory((prev) => [newConversation, ...prev]);
+        } else {
+          throw new Error('No conversation_id returned');
+        }
+      } catch (err) {
+        console.error('Error creating conversation:', err);
+        return;
+      }
+    }
+
     // Add user message
     const userMessage: Message = {
       id: Date.now(),
-      conversation_id: activeChat || "",
+      conversation_id: conversationId || "",
       message_id: messages.length + 1,
       message_text: input,
       notes: null,
@@ -246,7 +282,9 @@ const MainChat = ({ initialView = "chat" }: MainChatProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://192.168.50.119:5678/webhook-test/ask', {
+      const response = await fetch(isNotionRagActive
+        ? 'http://192.168.50.119:5678/webhook/ask-notion'
+        : 'http://192.168.50.119:5678/webhook/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,23 +292,27 @@ const MainChat = ({ initialView = "chat" }: MainChatProps) => {
           'Access-Control-Allow-Origin': '*'
         },
         mode: 'cors',
-        body: JSON.stringify({ chatInput: input }),
+        body: JSON.stringify({ chatInput: input, user_id: '38137', conversation_id: conversationId }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to get response from AI');
       }
 
+      console.log(response);
+
       const data = await response.json();
+
+      console.log(data);
       
       const aiMessage: Message = {
         id: Date.now() + 1,
-        conversation_id: activeChat || "",
+        conversation_id: conversationId || "",
         message_id: messages.length + 2,
-        message_text: data.answer,
-        notes: data.notes,
-        chart_spec: data.chart_spec,
-        chart_notes: null,
+        message_text: data.message_text || null,
+        notes: data.notes || null,
+        chart_spec: data.chart_spec || null,
+        chart_notes: data.chart_notes || null,
         sender_type: "BOT",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -282,7 +324,7 @@ const MainChat = ({ initialView = "chat" }: MainChatProps) => {
       // Add error message
       const errorMessage: Message = {
         id: Date.now() + 1,
-        conversation_id: activeChat || "",
+        conversation_id: conversationId || "",
         message_id: messages.length + 2,
         message_text: "ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI กรุณาลองใหม่อีกครั้ง",
         notes: null,
@@ -418,6 +460,8 @@ const MainChat = ({ initialView = "chat" }: MainChatProps) => {
           setInput={setInput}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
+          isNotionRagActive={isNotionRagActive}
+          onToggleNotionRag={() => setIsNotionRagActive((prev) => !prev)}
         />
       </main>
     </div>

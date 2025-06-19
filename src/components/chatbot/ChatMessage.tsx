@@ -237,7 +237,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
             }}
           >
             <ChartRenderer
-              type={message.chart_spec.type}
+              type={message.chart_spec.type || 'bar'}
               data={message.chart_spec.data}
               keys={message.chart_spec.keys}
               indexBy={message.chart_spec.indexBy}

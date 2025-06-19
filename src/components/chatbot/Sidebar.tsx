@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { ChatHistoryItem } from "./types";
+import { useEffect, useRef } from "react";
 
 interface SidebarProps {
   chatHistory: ChatHistoryItem[];
@@ -17,6 +18,15 @@ export const Sidebar = ({
   onNewChat,
   onClearChats
 }: SidebarProps) => {
+  // Map of refs for each chat item
+  const chatRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  useEffect(() => {
+    if (activeChat && chatRefs.current[activeChat]) {
+      chatRefs.current[activeChat]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [activeChat, chatHistory.length]);
+
   return (
     <div className="w-64 h-full bg-purple-50 dark:bg-purple-950 border-r border-purple-200 dark:border-purple-800 p-4 flex flex-col shadow-lg md:shadow-none">
       {/* <div className="purple-gradient text-white p-3 rounded-lg mb-6 text-center font-bold">
@@ -39,6 +49,7 @@ export const Sidebar = ({
         {chatHistory.map((chat) => (
           <div 
             key={chat.conversation_id}
+            ref={el => chatRefs.current[chat.conversation_id] = el}
             className={`p-2 mb-1 cursor-pointer chat-history-item ${activeChat === chat.conversation_id ? 'active' : ''}`}
             onClick={() => onChatSelect(chat.conversation_id)}
           >

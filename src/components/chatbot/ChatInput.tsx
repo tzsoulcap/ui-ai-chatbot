@@ -8,9 +8,11 @@ interface ChatInputProps {
   setInput: (value: string) => void;
   onSendMessage: () => void;
   isLoading: boolean;
+  isNotionRagActive: boolean;
+  onToggleNotionRag: () => void;
 }
 
-export const ChatInput = ({ input, setInput, onSendMessage, isLoading }: ChatInputProps) => {
+export const ChatInput = ({ input, setInput, onSendMessage, isLoading, isNotionRagActive, onToggleNotionRag }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -51,8 +53,18 @@ export const ChatInput = ({ input, setInput, onSendMessage, isLoading }: ChatInp
           <Send size={16} />
         </Button>
       </div>
-      <div className="text-xs text-center mt-2 text-gray-500 dark:text-gray-400">
-        Press Enter to send, Shift+Enter for a new line
+      <div className="flex justify-between items-center mt-2">
+        <Button
+          variant={isNotionRagActive ? "default" : "outline"}
+          size="sm"
+          className={`text-xs px-3 py-1 rounded-full transition-colors ${isNotionRagActive ? "bg-green-500 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"}`}
+          onClick={onToggleNotionRag}
+        >
+          Notion RAG {isNotionRagActive ? "ON" : "OFF"}
+        </Button>
+        <div className="text-xs text-center text-gray-500 dark:text-gray-400">
+          Press Enter to send, Shift+Enter for a new line
+        </div>
       </div>
     </div>
   );
