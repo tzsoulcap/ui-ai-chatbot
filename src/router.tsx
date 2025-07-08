@@ -8,6 +8,7 @@ import { Navbar } from "./components/chatbot/Navbar";
 import { TestAgent } from "./components/chatbot/TestAgent";
 import { TestNotionRAG } from "./components/chatbot/TestNotionRAG";
 import MainChat from "./pages/MainChat";
+import KnowledgeManagement from "./pages/KnowledgeManagement";
 import { useNavigate, useParams } from "react-router-dom";
 
 // Wrapper components for each route
@@ -114,6 +115,22 @@ const AppPreviewPage = () => {
   );
 };
 
+// Knowledge Management Page
+const KnowledgeManagementPage = () => {
+  return (
+    <div className="h-screen w-screen overflow-hidden relative bg-white dark:bg-gray-900">
+      <Navbar 
+        sidebarOpen={false} 
+        toggleSidebar={() => {}}
+        isKnowledgeActive={true}
+      />
+      <div className="h-[calc(100%-56px)] overflow-auto">
+        <KnowledgeManagement />
+      </div>
+    </div>
+  );
+};
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -130,6 +147,10 @@ export const router = createBrowserRouter([
   {
     path: "/knowledge",
     element: <KnowledgePage />,
+  },
+  {
+    path: "/knowledge-management",
+    element: <KnowledgeManagementPage />,
   },
   {
     path: "/test-agent",

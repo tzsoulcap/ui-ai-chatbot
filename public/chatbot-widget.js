@@ -1,0 +1,1279 @@
+/**
+ * Advanced Chatbot Widget Embed Script
+ * 
+ * HOW TO USE:
+ * 1. Add this script to your website:
+ *    <script src="https://your-domain.com/chatbot-widget.js" id="chatbot-widget" data-api-url="http://192.168.50.119:5678/webhook" data-user-id="38137"></script>
+ * 
+ * 2. Customize with data attributes:
+ *    data-api-url: Base URL for API endpoints (required)
+ *    data-user-id: User ID for API calls (required)
+ *    data-button-color: Color of the chat button (default: #7c3aed)
+ *    data-button-size: Size of the chat button (default: 60px)
+ *    data-position: Position of the widget (default: right, options: right, left)
+ *    data-bottom-offset: Distance from bottom (default: 20px)
+ *    data-side-offset: Distance from side (default: 20px)
+ *    data-widget-width: Width of chat window (default: 400px)
+ *    data-widget-height: Height of chat window (default: 600px)
+ *    data-hide-on-mobile: Hide on mobile devices (default: false)
+ *    data-notion-rag: Enable Notion RAG by default (default: false)
+ */
+
+(function() {
+  'use strict';
+
+  // Get script element
+  const scriptElement = document.getElementById('chatbot-widget');
+  
+  if (!scriptElement) {
+    console.error('Chatbot widget script must have id="chatbot-widget"');
+    return;
+  }
+  
+  // Get configuration from data attributes
+  const config = {
+    apiUrl: scriptElement.getAttribute('data-api-url'),
+    userId: scriptElement.getAttribute('data-user-id'),
+    buttonColor: scriptElement.getAttribute('data-button-color') || '#7c3aed',
+    buttonSize: scriptElement.getAttribute('data-button-size') || '60px',
+    position: scriptElement.getAttribute('data-position') || 'right',
+    bottomOffset: scriptElement.getAttribute('data-bottom-offset') || '20px',
+    sideOffset: scriptElement.getAttribute('data-side-offset') || '20px',
+    widgetWidth: scriptElement.getAttribute('data-widget-width') || '400px',
+    widgetHeight: scriptElement.getAttribute('data-widget-height') || '600px',
+    hideOnMobile: scriptElement.getAttribute('data-hide-on-mobile') === 'true',
+    notionRag: scriptElement.getAttribute('data-notion-rag') === 'true',
+    buttonIcon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+    closeIcon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+    sendIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+  };
+  
+  // Validate required configuration
+  if (!config.apiUrl) {
+    console.error('API URL is required. Add data-api-url attribute to the script tag.');
+    return;
+  }
+  
+  if (!config.userId) {
+    console.error('User ID is required. Add data-user-id attribute to the script tag.');
+    return;
+  }
+  
+  // Check if we should hide on mobile
+  if (config.hideOnMobile && window.innerWidth < 768) {
+    return;
+  }
+
+  // State management
+  let isOpen = false;
+  let messages = [];
+  let chatHistory = [];
+  let activeChat = null;
+  let isLoading = false;
+  let isNotionRagActive = config.notionRag;
+  let inputValue = '';
+
+  // PostMessage handler
+  const handlePostMessage = (event) => {
+    // ตรวจสอบว่า message มาจาก main-app และเป็น ERROR_MESSAGE
+    if (event.data && event.data.source === 'main-app' && event.data.type === 'ERROR_MESSAGE') {
+      const errorData = event.data.data;
+      
+      // เปิด widget ถ้ายังไม่ได้เปิด
+      if (!isOpen) {
+        isOpen = true;
+        chatWindow.classList.add('active');
+        if (messages.length === 0) {
+          showWelcome();
+        }
+      }
+      
+      // ใส่ข้อความ error ใน input
+      textarea.value = `System Error: ${errorData.message}`;
+      resizeTextarea();
+      updateSendButton();
+      
+      // แสดง notification หรือ highlight input
+      textarea.style.borderColor = '#ef4444';
+      textarea.style.backgroundColor = '#fef2f2';
+      
+      // กลับเป็นปกติหลังจาก 3 วินาที
+      setTimeout(() => {
+        textarea.style.borderColor = '';
+        textarea.style.backgroundColor = '';
+      }, 3000);
+      
+      // Focus ที่ input
+      textarea.focus();
+    }
+  };
+
+  // API functions
+  const api = {
+    async fetchChatHistory() {
+      try {
+        const response = await fetch(`${config.apiUrl}/conversations?user_id=${config.userId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          mode: 'cors'
+        });
+        if (!response.ok) throw new Error('Failed to fetch chat history');
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+        return [];
+      }
+    },
+
+    async fetchConversationMessages(chatId) {
+      try {
+        const response = await fetch(`${config.apiUrl}/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}/messages`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          mode: 'cors'
+        });
+        if (!response.ok) throw new Error('Failed to fetch conversation messages');
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching conversation messages:', error);
+        return [];
+      }
+    },
+
+    async createConversation(title) {
+      try {
+        const response = await fetch(`${config.apiUrl}/conversations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          mode: 'cors',
+          body: JSON.stringify({ title, user_id: config.userId }),
+        });
+        if (!response.ok) throw new Error('Failed to create conversation');
+        return await response.json();
+      } catch (error) {
+        console.error('Error creating conversation:', error);
+        return null;
+      }
+    },
+
+    async sendMessage(chatInput, conversationId) {
+      try {
+        const endpoint = isNotionRagActive ? 'ask-notion' : 'ask';
+        const response = await fetch(`${config.apiUrl}/mock/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          mode: 'cors',
+          body: JSON.stringify({ 
+            chatInput, 
+            user_id: config.userId, 
+            conversation_id: conversationId 
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to get response from AI');
+        return await response.json();
+      } catch (error) {
+        console.error('Error sending message:', error);
+        return null;
+      }
+    }
+  };
+
+  // Create styles
+  const styles = document.createElement('style');
+  styles.innerHTML = `
+    .chatbot-widget-container {
+      position: fixed;
+      bottom: ${config.bottomOffset};
+      ${config.position}: ${config.sideOffset};
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    
+    .chatbot-widget-button {
+      width: ${config.buttonSize};
+      height: ${config.buttonSize};
+      border-radius: 50%;
+      background-color: ${config.buttonColor};
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+    }
+    
+    .chatbot-widget-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .chatbot-widget-window {
+      position: absolute;
+      bottom: calc(${config.buttonSize} + 10px);
+      ${config.position}: 0;
+      width: ${config.widgetWidth};
+      height: ${config.widgetHeight};
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      pointer-events: none;
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .chatbot-widget-window.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+    
+    .chatbot-widget-header {
+      background: ${config.buttonColor};
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .chatbot-widget-close {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+    }
+    
+    .chatbot-widget-close:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .chatbot-widget-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      background: #f8fafc;
+    }
+    
+    .chatbot-widget-message {
+      margin-bottom: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .chatbot-widget-message.user {
+      justify-content: flex-end;
+    }
+    
+    .chatbot-widget-message-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .chatbot-widget-message-avatar.bot {
+      background: ${config.buttonColor};
+      color: white;
+    }
+    
+    .chatbot-widget-message-avatar.user {
+      background: #e2e8f0;
+      color: #64748b;
+    }
+    
+    .chatbot-widget-message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .chatbot-widget-message-content.bot {
+      background: white;
+      color: #1e293b;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chatbot-widget-message-content.user {
+      background: ${config.buttonColor};
+      color: white;
+    }
+    
+    .chatbot-widget-content-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 70%;
+    }
+    
+    /* Markdown styles */
+    .chatbot-widget-message-content strong {
+      font-weight: 600;
+    }
+    
+    .chatbot-widget-message-content em {
+      font-style: italic;
+    }
+    
+    .chatbot-widget-message-content code {
+      background: #f1f5f9;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #dc2626;
+    }
+    
+    .chatbot-widget-message-content pre {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+    
+    .chatbot-widget-message-content pre code {
+      background: none;
+      padding: 0;
+      color: #1e293b;
+      font-size: 0.9em;
+    }
+    
+    .chatbot-widget-message-content a {
+      color: ${config.buttonColor};
+      text-decoration: none;
+    }
+    
+    .chatbot-widget-message-content a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Chart styles */
+    .chatbot-widget-chart-container {
+      margin: 12px 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      overflow: hidden;
+    }
+    
+    .chatbot-widget-chart-container svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    @media (max-width: 768px) {
+      .chatbot-widget-chart-container {
+        max-width: 280px;
+        height: 200px;
+      }
+    }
+    
+    .chatbot-widget-chart-notes {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #64748b;
+      border-left: 3px solid ${config.buttonColor};
+    }
+    
+    .chatbot-widget-chart-notes strong {
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .chatbot-widget-chart-notes em {
+      font-style: italic;
+    }
+    
+    .chatbot-widget-chart-notes code {
+      background: #f1f5f9;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #dc2626;
+    }
+    
+    .chatbot-widget-input-container {
+      padding: 16px;
+      background: white;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .chatbot-widget-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    
+    .chatbot-widget-textarea {
+      flex: 1;
+      min-height: 44px;
+      max-height: 120px;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    
+    .chatbot-widget-textarea:focus {
+      border-color: ${config.buttonColor};
+    }
+    
+    .chatbot-widget-send {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: ${config.buttonColor};
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .chatbot-widget-send:hover:not(:disabled) {
+      background: ${config.buttonColor}dd;
+    }
+    
+    .chatbot-widget-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .chatbot-widget-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    .chatbot-widget-loading-dots {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .chatbot-widget-loading-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #64748b;
+      animation: chatbot-loading 1.4s infinite ease-in-out;
+    }
+    
+    .chatbot-widget-loading-dot:nth-child(1) { animation-delay: -0.32s; }
+    .chatbot-widget-loading-dot:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes chatbot-loading {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    
+    .chatbot-widget-toggle {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .chatbot-widget-toggle.active {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+    
+    .chatbot-widget-toggle:hover {
+      background: #e2e8f0;
+    }
+    
+    .chatbot-widget-toggle.active:hover {
+      background: #059669;
+    }
+    
+    .chatbot-widget-welcome {
+      text-align: center;
+      padding: 32px 16px;
+      color: #64748b;
+    }
+    
+    .chatbot-widget-welcome h3 {
+      margin: 0 0 8px 0;
+      color: #1e293b;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .chatbot-widget-welcome p {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+    }
+    
+    .chatbot-widget-suggestions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .chatbot-widget-suggestion {
+      padding: 8px 12px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+    
+    .chatbot-widget-suggestion:hover {
+      background: #f8fafc;
+      border-color: ${config.buttonColor};
+    }
+    
+    @media (max-width: 768px) {
+      .chatbot-widget-window {
+        width: calc(100vw - 40px);
+        ${config.position}: -${config.sideOffset};
+        max-width: ${config.widgetWidth};
+      }
+    }
+  `;
+  document.head.appendChild(styles);
+
+  // Create widget container
+  const widgetContainer = document.createElement('div');
+  widgetContainer.className = 'chatbot-widget-container';
+
+  // Create chat button
+  const chatButton = document.createElement('button');
+  chatButton.className = 'chatbot-widget-button';
+  chatButton.innerHTML = config.buttonIcon;
+  
+  // Create chat window
+  const chatWindow = document.createElement('div');
+  chatWindow.className = 'chatbot-widget-window';
+  
+  // Create header
+  const header = document.createElement('div');
+  header.className = 'chatbot-widget-header';
+  header.innerHTML = `
+    <span>AI Assistant</span>
+    <button class="chatbot-widget-close">${config.closeIcon}</button>
+  `;
+  
+  // Create messages container
+  const messagesContainer = document.createElement('div');
+  messagesContainer.className = 'chatbot-widget-messages';
+  
+  // Create input container
+  const inputContainer = document.createElement('div');
+  inputContainer.className = 'chatbot-widget-input-container';
+  inputContainer.innerHTML = `
+    <div class="chatbot-widget-input-wrapper">
+      <textarea 
+        class="chatbot-widget-textarea" 
+        placeholder="Type your message here..."
+        rows="1"
+      ></textarea>
+      <button class="chatbot-widget-send" disabled>${config.sendIcon}</button>
+    </div>
+    <button class="chatbot-widget-toggle ${isNotionRagActive ? 'active' : ''}">
+      Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}
+    </button>
+  `;
+  
+  // Append elements
+  chatWindow.appendChild(header);
+  chatWindow.appendChild(messagesContainer);
+  chatWindow.appendChild(inputContainer);
+  widgetContainer.appendChild(chatWindow);
+  widgetContainer.appendChild(chatButton);
+  document.body.appendChild(widgetContainer);
+  
+  // Get references to elements
+  const closeButton = header.querySelector('.chatbot-widget-close');
+  const textarea = inputContainer.querySelector('.chatbot-widget-textarea');
+  const sendButton = inputContainer.querySelector('.chatbot-widget-send');
+  const toggleButton = inputContainer.querySelector('.chatbot-widget-toggle');
+  
+  // Auto-resize textarea
+  const resizeTextarea = () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  };
+  
+  textarea.addEventListener('input', resizeTextarea);
+  
+  // Update send button state
+  const updateSendButton = () => {
+    sendButton.disabled = !textarea.value.trim() || isLoading;
+  };
+  
+  textarea.addEventListener('input', updateSendButton);
+  
+  // Show welcome screen
+  const showWelcome = () => {
+    messagesContainer.innerHTML = `
+      <div class="chatbot-widget-welcome">
+        <h3>Welcome to AI Assistant</h3>
+        <p>Ask me anything! I'm here to help.</p>
+        <div class="chatbot-widget-suggestions">
+          <button class="chatbot-widget-suggestion">How can you help me?</button>
+          <button class="chatbot-widget-suggestion">What are your capabilities?</button>
+          <button class="chatbot-widget-suggestion">Tell me a joke</button>
+        </div>
+      </div>
+    `;
+    
+    // Add event listeners to suggestions
+    const suggestions = messagesContainer.querySelectorAll('.chatbot-widget-suggestion');
+    suggestions.forEach(suggestion => {
+      suggestion.addEventListener('click', () => {
+        textarea.value = suggestion.textContent;
+        resizeTextarea();
+        updateSendButton();
+        sendMessage();
+      });
+    });
+  };
+  
+  // Simple markdown parser
+  const parseMarkdown = (text) => {
+    if (!text) return '';
+    
+    return text
+      // Bold: **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      
+      // Italic: *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      
+      // Code: `code`
+      .replace(/`(.*?)`/g, '<code>$1</code>')
+      
+      // Code blocks: ```code```
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      
+      // Links: [text](url)
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      
+      // Line breaks
+      .replace(/\n/g, '<br>');
+  };
+
+  // Simple chart renderer for widget
+  const renderChart = (chartSpec) => {
+    console.log('Rendering chart with spec:', chartSpec);
+    console.log('Chart spec type:', typeof chartSpec);
+    console.log('Chart spec keys:', Object.keys(chartSpec || {}));
+    
+    if (!chartSpec) {
+      console.log('Chart spec is null/undefined');
+      return null;
+    }
+    
+    if (!chartSpec.data) {
+      console.log('Chart spec missing data:', chartSpec);
+      return null;
+    }
+    
+    // Check if it's Nivo format (has data with 'value' property)
+    const isNivoFormat = chartSpec.data && chartSpec.data.length > 0 && chartSpec.data[0].hasOwnProperty('value');
+    
+    if (!isNivoFormat) {
+      // Only check keys and indexBy for non-Nivo format
+      if (!chartSpec.keys) {
+        console.log('Chart spec missing keys (non-Nivo format):', chartSpec);
+        return null;
+      }
+      
+      if (!chartSpec.indexBy) {
+        console.log('Chart spec missing indexBy (non-Nivo format):', chartSpec);
+        return null;
+      }
+    } else {
+      console.log('Detected Nivo format, skipping keys/indexBy validation');
+    }
+    
+    console.log('Chart spec validation passed');
+
+    const chartId = 'chart-' + Date.now() + Math.random().toString(36).substr(2, 9);
+    
+    // Create chart container
+    const chartContainer = document.createElement('div');
+    chartContainer.className = 'chatbot-widget-chart-container';
+    chartContainer.id = chartId;
+    chartContainer.style.cssText = `
+      width: 100%;
+      max-width: 350px;
+      height: 250px;
+      margin: 12px 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #64748b;
+      overflow: hidden;
+    `;
+    
+    // Simple chart visualization based on type
+    let chartHTML = '';
+    const { type, data } = chartSpec;
+    
+    // Handle both Nivo format and original format
+    let keys = chartSpec.keys;
+    let indexBy = chartSpec.indexBy;
+    
+    // If it's Nivo format, extract keys and indexBy from data
+    if (data && data.length > 0 && data[0].hasOwnProperty('value')) {
+      // Nivo format - data has 'value' property
+      keys = ['value'];
+      indexBy = 'id';
+      console.log('Detected Nivo format, using keys:', keys, 'indexBy:', indexBy);
+    } else {
+      // Original format
+      keys = chartSpec.keys;
+      indexBy = chartSpec.indexBy;
+      console.log('Using original format, keys:', keys, 'indexBy:', indexBy);
+    }
+    
+    console.log('Chart type:', type, 'Data:', data, 'Keys:', keys, 'IndexBy:', indexBy);
+    
+    switch (type) {
+      case 'bar':
+        chartHTML = renderBarChart(data, keys, indexBy);
+        break;
+      case 'line':
+        chartHTML = renderLineChart(data, keys, indexBy);
+        break;
+      case 'pie':
+        chartHTML = renderPieChart(data, keys, indexBy);
+        break;
+      default:
+        chartHTML = renderBarChart(data, keys, indexBy);
+    }
+    
+    console.log('Generated chart HTML:', chartHTML);
+    chartContainer.innerHTML = chartHTML;
+    return chartContainer;
+  };
+
+  const renderBarChart = (data, keys, indexBy) => {
+    console.log('Rendering bar chart with:', { data, keys, indexBy });
+    
+    if (!data || data.length === 0) {
+      console.log('No data for bar chart');
+      return '<div style="padding: 20px; text-align: center;">No data available</div>';
+    }
+    
+    try {
+      const maxValue = Math.max(...data.map(d => Math.max(...keys.map(key => d[key] || 0))));
+      console.log('Max value:', maxValue);
+      
+      if (maxValue <= 0) {
+        return '<div style="padding: 20px; text-align: center;">No valid data</div>';
+      }
+      
+      const chartHeight = 150;
+      const barWidth = 25;
+      const barSpacing = 8;
+      const totalWidth = data.length * (barWidth + barSpacing);
+      
+      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${totalWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet">`;
+      
+      data.forEach((item, index) => {
+        const x = index * (barWidth + barSpacing);
+        keys.forEach((key, keyIndex) => {
+          const value = item[key] || 0;
+          const height = (value / maxValue) * (chartHeight - 40);
+          const y = chartHeight - height - 20;
+          const color = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][keyIndex % 5];
+          
+          svg += `<rect x="${x + keyIndex * 8}" y="${y}" width="${barWidth - 8}" height="${height}" fill="${color}" rx="2"/>`;
+          svg += `<text x="${x + barWidth/2}" y="${chartHeight - 5}" text-anchor="middle" font-size="10" fill="#64748b">${item[indexBy]}</text>`;
+        });
+      });
+      
+      svg += '</svg>';
+      console.log('Generated SVG:', svg);
+      return svg;
+    } catch (error) {
+      console.error('Error rendering bar chart:', error);
+      return '<div style="padding: 20px; text-align: center; color: red;">Error rendering chart</div>';
+    }
+  };
+
+  const renderLineChart = (data, keys, indexBy) => {
+    if (!data || data.length === 0) return '<div>No data available</div>';
+    
+          const chartHeight = 150;
+      const chartWidth = 300;
+      const padding = 30;
+      
+      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet">`;
+    
+    keys.forEach((key, keyIndex) => {
+      const color = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][keyIndex % 5];
+      const points = data.map((item, index) => {
+        const x = padding + (index / (data.length - 1)) * (chartWidth - 2 * padding);
+        const y = chartHeight - padding - (item[key] || 0) / Math.max(...data.map(d => d[key] || 0)) * (chartHeight - 2 * padding);
+        return `${x},${y}`;
+      }).join(' ');
+      
+      svg += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2"/>`;
+    });
+    
+    svg += '</svg>';
+    return svg;
+  };
+
+  const renderPieChart = (data, keys, indexBy) => {
+    console.log('Rendering pie chart with:', { data, keys, indexBy });
+    
+    if (!data || data.length === 0) {
+      console.log('No data for pie chart');
+      return '<div style="padding: 20px; text-align: center;">No data available</div>';
+    }
+    
+          try {
+        const chartSize = 180;
+        const radius = chartSize / 2 - 25;
+        const centerX = chartSize / 2;
+        const centerY = chartSize / 2;
+        
+        let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartSize} ${chartSize}" preserveAspectRatio="xMidYMid meet">`;
+      
+      // Check if data is in Nivo format (has 'value' property)
+      const isNivoFormat = data[0] && data[0].hasOwnProperty('value');
+      
+      let total, currentAngle = 0;
+      
+      if (isNivoFormat) {
+        // Nivo format: data has 'value' property
+        total = data.reduce((sum, item) => sum + (item.value || 0), 0);
+        console.log('Using Nivo format, total:', total);
+        
+        data.forEach((item, index) => {
+          const value = item.value || 0;
+          const angle = (value / total) * 2 * Math.PI;
+          const color = item.color || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][index % 5];
+          const label = item.label || item.id || `Item ${index}`;
+          
+          const x1 = centerX + radius * Math.cos(currentAngle);
+          const y1 = centerY + radius * Math.sin(currentAngle);
+          const x2 = centerX + radius * Math.cos(currentAngle + angle);
+          const y2 = centerY + radius * Math.sin(currentAngle + angle);
+          
+          const largeArcFlag = angle > Math.PI ? 1 : 0;
+          
+          svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" fill="${color}"/>`;
+          
+          // Add label (smaller and closer)
+          const labelAngle = currentAngle + angle / 2;
+          const labelRadius = radius + 15;
+          const labelX = centerX + labelRadius * Math.cos(labelAngle);
+          const labelY = centerY + labelRadius * Math.sin(labelAngle);
+          
+          svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="8" fill="#64748b">${label}</text>`;
+          
+          currentAngle += angle;
+        });
+      } else {
+        // Original format: data has keys property
+        total = data.reduce((sum, item) => sum + (item[keys[0]] || 0), 0);
+        console.log('Using original format, total:', total);
+        
+        data.forEach((item, index) => {
+          const value = item[keys[0]] || 0;
+          const angle = (value / total) * 2 * Math.PI;
+          const color = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][index % 5];
+          
+          const x1 = centerX + radius * Math.cos(currentAngle);
+          const y1 = centerY + radius * Math.sin(currentAngle);
+          const x2 = centerX + radius * Math.cos(currentAngle + angle);
+          const y2 = centerY + radius * Math.sin(currentAngle + angle);
+          
+          const largeArcFlag = angle > Math.PI ? 1 : 0;
+          
+          svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" fill="${color}"/>`;
+          
+          currentAngle += angle;
+        });
+      }
+      
+      svg += '</svg>';
+      console.log('Generated pie chart SVG');
+      return svg;
+    } catch (error) {
+      console.error('Error rendering pie chart:', error);
+      return '<div style="padding: 20px; text-align: center; color: red;">Error rendering pie chart</div>';
+    }
+  };
+
+  // Add message to UI
+  const addMessage = (message) => {
+    const messageElement = document.createElement('div');
+    messageElement.className = `chatbot-widget-message ${message.sender_type.toLowerCase()}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = `chatbot-widget-message-avatar ${message.sender_type.toLowerCase()}`;
+    avatar.textContent = message.sender_type === 'USER' ? 'U' : 'AI';
+    
+    const content = document.createElement('div');
+    content.className = `chatbot-widget-message-content ${message.sender_type.toLowerCase()}`;
+    
+    // Parse markdown for BOT messages only
+    if (message.sender_type === 'BOT') {
+      content.innerHTML = parseMarkdown(message.message_text);
+    } else {
+      content.textContent = message.message_text;
+    }
+    
+    if (message.sender_type === 'USER') {
+      messageElement.appendChild(content);
+      messageElement.appendChild(avatar);
+    } else {
+      messageElement.appendChild(avatar);
+      
+      // Create a container for all content (text, chart, notes)
+      const contentContainer = document.createElement('div');
+      contentContainer.className = 'chatbot-widget-content-container';
+      
+      // Add text content
+      contentContainer.appendChild(content);
+      
+      // Add chart if available (only for BOT messages) - AFTER content
+      if (message.chart_spec) {
+        console.log('Adding chart to message:', message.chart_spec);
+        const chartElement = renderChart(message.chart_spec);
+        console.log('Chart element created:', chartElement);
+        if (chartElement) {
+          contentContainer.appendChild(chartElement);
+          console.log('Chart element added to container');
+        } else {
+          console.log('Failed to create chart element');
+        }
+      }
+      
+      // Add chart notes if available - AFTER chart
+      if (message.chart_notes) {
+        const notesElement = document.createElement('div');
+        notesElement.className = 'chatbot-widget-chart-notes';
+        notesElement.innerHTML = parseMarkdown(message.chart_notes);
+        contentContainer.appendChild(notesElement);
+      }
+      
+      messageElement.appendChild(contentContainer);
+    }
+    
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  };
+  
+  // Show loading indicator
+  const showLoading = () => {
+    const loadingElement = document.createElement('div');
+    loadingElement.className = 'chatbot-widget-loading';
+    loadingElement.innerHTML = `
+      <span>AI is thinking</span>
+      <div class="chatbot-widget-loading-dots">
+        <div class="chatbot-widget-loading-dot"></div>
+        <div class="chatbot-widget-loading-dot"></div>
+        <div class="chatbot-widget-loading-dot"></div>
+      </div>
+    `;
+    messagesContainer.appendChild(loadingElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return loadingElement;
+  };
+  
+  // Send message function
+  const sendMessage = async () => {
+    const input = textarea.value.trim();
+    if (!input || isLoading) return;
+    
+    // Add user message
+    const userMessage = {
+      id: Date.now(),
+      conversation_id: activeChat || '',
+      message_id: messages.length + 1,
+      message_text: input,
+      notes: null,
+      chart_spec: null,
+      chart_notes: null,
+      sender_type: 'USER',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    messages.push(userMessage);
+    addMessage(userMessage);
+    
+    // Clear input
+    textarea.value = '';
+    resizeTextarea();
+    updateSendButton();
+    
+    // Show loading
+    isLoading = true;
+    const loadingElement = showLoading();
+    
+    try {
+      let conversationId = activeChat;
+      
+      // Create conversation if needed
+      if (!conversationId) {
+        const newConversation = await api.createConversation(input);
+        if (newConversation) {
+          if (Array.isArray(newConversation) && newConversation.length > 0) {
+            conversationId = newConversation[0].conversation_id;
+          } else if (newConversation.conversation_id) {
+            conversationId = newConversation.conversation_id;
+          }
+          activeChat = conversationId;
+          chatHistory.unshift(newConversation);
+        }
+      }
+      
+      // Send message to AI
+      const response = await api.sendMessage(input, conversationId);
+      
+      if (response) {
+        console.log('API Response:', response);
+        console.log('Chart spec from API:', response.chart_spec);
+        
+        const aiMessage = {
+          id: Date.now() + 1,
+          conversation_id: conversationId || '',
+          message_id: messages.length + 1,
+          message_text: response.message_text || 'Sorry, I encountered an error.',
+          notes: response.notes || null,
+          chart_spec: response.chart_spec || null,
+          chart_notes: response.chart_notes || null,
+          sender_type: 'BOT',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        console.log('Created AI message:', aiMessage);
+        messages.push(aiMessage);
+        addMessage(aiMessage);
+      } else {
+        // Show error message
+        const errorMessage = {
+          id: Date.now() + 1,
+          conversation_id: conversationId || '',
+          message_id: messages.length + 1,
+          message_text: 'ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI กรุณาลองใหม่อีกครั้ง',
+          notes: null,
+          chart_spec: null,
+          chart_notes: null,
+          sender_type: 'BOT',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        messages.push(errorMessage);
+        addMessage(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        conversation_id: activeChat || '',
+        message_id: messages.length + 1,
+        message_text: 'ขออภัย เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI กรุณาลองใหม่อีกครั้ง',
+        notes: null,
+        chart_spec: null,
+        chart_notes: null,
+        sender_type: 'BOT',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      messages.push(errorMessage);
+      addMessage(errorMessage);
+    } finally {
+      isLoading = false;
+      if (loadingElement) {
+        loadingElement.remove();
+      }
+    }
+  };
+  
+  // Event listeners
+  chatButton.addEventListener('click', () => {
+    isOpen = !isOpen;
+    if (isOpen) {
+      chatWindow.classList.add('active');
+      if (messages.length === 0) {
+        showWelcome();
+      }
+    } else {
+      chatWindow.classList.remove('active');
+    }
+  });
+  
+  closeButton.addEventListener('click', () => {
+    isOpen = false;
+    chatWindow.classList.remove('active');
+  });
+  
+  sendButton.addEventListener('click', sendMessage);
+  
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  
+  toggleButton.addEventListener('click', () => {
+    isNotionRagActive = !isNotionRagActive;
+    toggleButton.textContent = `Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}`;
+    toggleButton.classList.toggle('active', isNotionRagActive);
+  });
+  
+  // Close chat when clicking outside
+  document.addEventListener('click', (event) => {
+    if (isOpen && !widgetContainer.contains(event.target)) {
+      isOpen = false;
+      chatWindow.classList.remove('active');
+    }
+  });
+  
+  // Load chat history on init
+  const initWidget = async () => {
+    chatHistory = await api.fetchChatHistory();
+  };
+  
+  initWidget();
+  
+  // Add postMessage event listener
+  window.addEventListener('message', handlePostMessage);
+  
+  // Expose API
+  window.ChatbotWidget = {
+    open: () => {
+      isOpen = true;
+      chatWindow.classList.add('active');
+      if (messages.length === 0) {
+        showWelcome();
+      }
+    },
+    close: () => {
+      isOpen = false;
+      chatWindow.classList.remove('active');
+    },
+    toggle: () => {
+      chatButton.click();
+    },
+    sendMessage: (text) => {
+      textarea.value = text;
+      resizeTextarea();
+      updateSendButton();
+      sendMessage();
+    },
+    setNotionRag: (enabled) => {
+      isNotionRagActive = enabled;
+      toggleButton.textContent = `Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}`;
+      toggleButton.classList.toggle('active', isNotionRagActive);
+    },
+    // Method to handle external messages
+    handleExternalMessage: (messageData) => {
+      if (messageData && messageData.source === 'main-app' && messageData.type === 'ERROR_MESSAGE') {
+        const errorData = messageData.data;
+        
+        // เปิด widget ถ้ายังไม่ได้เปิด
+        if (!isOpen) {
+          isOpen = true;
+          chatWindow.classList.add('active');
+          if (messages.length === 0) {
+            showWelcome();
+          }
+        }
+        
+        // ใส่ข้อความ error ใน input
+        textarea.value = `System Error: ${errorData.message}`;
+        resizeTextarea();
+        updateSendButton();
+        
+        // แสดง notification หรือ highlight input
+        textarea.style.borderColor = '#ef4444';
+        textarea.style.backgroundColor = '#fef2f2';
+        
+        // กลับเป็นปกติหลังจาก 3 วินาที
+        setTimeout(() => {
+          textarea.style.borderColor = '';
+          textarea.style.backgroundColor = '';
+        }, 3000);
+        
+        // Focus ที่ input
+        textarea.focus();
+      }
+    }
+  };
+})(); 
