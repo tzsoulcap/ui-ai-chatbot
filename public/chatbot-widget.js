@@ -1,5 +1,6 @@
 /**
  * Advanced Chatbot Widget Embed Script
+ * Version: 2.0.0 (Updated for dynamic userId support)
  * 
  * HOW TO USE:
  * 1. Add this script to your website:
@@ -7,7 +8,7 @@
  * 
  * 2. Customize with data attributes:
  *    data-api-url: Base URL for API endpoints (required)
- *    data-user-id: User ID for API calls (required)
+ *    data-user-id: User ID for API calls (optional - see multiple ways below)
  *    data-button-color: Color of the chat button (default: #7c3aed)
  *    data-button-size: Size of the chat button (default: 60px)
  *    data-position: Position of the widget (default: right, options: right, left)
@@ -17,6 +18,66 @@
  *    data-widget-height: Height of chat window (default: 600px)
  *    data-hide-on-mobile: Hide on mobile devices (default: false)
  *    data-notion-rag: Enable Notion RAG by default (default: false)
+ * 
+ * MULTIPLE WAYS TO SET USER ID (in order of priority and security):
+ * 1. data-user-id attribute (highest priority, secure for server-side rendering)
+ * 2. localStorage: chatbot_user_id, user_id, or uid (secure, persistent)
+ * 3. sessionStorage: chatbot_user_id, user_id, or uid (secure, session-only)
+ * 4. Global variable: window.CHATBOT_USER_ID (secure if set before script load)
+ * 5. Meta tag: <meta name="chatbot-user-id" content="123"> (secure for server-side rendering)
+ * 6. postMessage API: window.postMessage({type: 'SET_USER_ID', userId: '123'}, '*') (secure)
+ * 7. JavaScript API: window.ChatbotWidget.setUserId('123') (secure)
+ * 8. URL parameters: ?userId=123 (NOT SECURE - requires data-allow-url-params="true")
+ * 
+ * EXAMPLES:
+ * 
+ * SECURE METHODS (Recommended):
+ * 
+ * localStorage (persistent across sessions):
+ * localStorage.setItem('chatbot_user_id', '38137');
+ * 
+ * sessionStorage (cleared when tab closes):
+ * sessionStorage.setItem('chatbot_user_id', '38137');
+ * 
+ * Global Variable (set before script loads):
+ * window.CHATBOT_USER_ID = '38137';
+ * 
+ * Meta Tag (server-side rendering):
+ * <meta name="chatbot-user-id" content="38137">
+ * 
+ * postMessage API (dynamic):
+ * window.postMessage({type: 'SET_USER_ID', userId: '38137'}, '*');
+ * 
+ * JavaScript API (dynamic):
+ * window.ChatbotWidget.setUserId('38137');
+ * 
+ * NOT SECURE (Development/Testing only):
+ * URL Parameters (requires data-allow-url-params="true"):
+ * https://yoursite.com?userId=38137
+ * 
+ * SECURITY WARNING: URL parameters are visible in:
+ * - Browser history
+ * - Server logs
+ * - Referrer headers
+ * - Network inspection tools
+ * - Browser developer tools
+ * 
+ * Set Multiple Config:
+ * window.postMessage({
+ *   type: 'SET_CONFIG', 
+ *   config: {
+ *     userId: '38137',
+ *     buttonColor: '#ff0000',
+ *     position: 'left'
+ *   }
+ * }, '*');
+ * 
+ * Or via JavaScript API:
+ * window.ChatbotWidget.setConfig({
+ *   userId: '38137',
+ *   buttonColor: '#ff0000',
+ *   position: 'left'
+ * });
  */
 
 (function() {
@@ -33,7 +94,7 @@
   // Get configuration from data attributes
   const config = {
     apiUrl: scriptElement.getAttribute('data-api-url'),
-    userId: scriptElement.getAttribute('data-user-id'),
+    userId: null, // Will be determined by multiple methods
     buttonColor: scriptElement.getAttribute('data-button-color') || '#7c3aed',
     buttonSize: scriptElement.getAttribute('data-button-size') || '60px',
     position: scriptElement.getAttribute('data-position') || 'right',
@@ -54,6 +115,79 @@
     </svg>`
   };
   
+  // Function to get userId from multiple sources
+  const getUserId = () => {
+    // 1. Check data attribute first (highest priority)
+    let userId = scriptElement.getAttribute('data-user-id');
+    
+    if (userId) {
+      console.log('User ID from data attribute:', userId);
+      return userId;
+    }
+    
+    // 2. Check localStorage (more secure than URL params)
+    userId = localStorage.getItem('chatbot_user_id') || 
+             localStorage.getItem('user_id') || 
+             localStorage.getItem('uid');
+    
+    if (userId) {
+      console.log('User ID from localStorage:', userId);
+      return userId;
+    }
+    
+    // 3. Check sessionStorage (more secure than URL params)
+    userId = sessionStorage.getItem('chatbot_user_id') || 
+             sessionStorage.getItem('user_id') || 
+             sessionStorage.getItem('uid');
+    
+    if (userId) {
+      console.log('User ID from sessionStorage:', userId);
+      return userId;
+    }
+    
+    // 4. Check global variable
+    if (window.CHATBOT_USER_ID) {
+      console.log('User ID from global variable:', window.CHATBOT_USER_ID);
+      return window.CHATBOT_USER_ID;
+    }
+    
+    // 5. Check meta tag
+    const metaTag = document.querySelector('meta[name="chatbot-user-id"]');
+    if (metaTag && metaTag.getAttribute('content')) {
+      console.log('User ID from meta tag:', metaTag.getAttribute('content'));
+      return metaTag.getAttribute('content');
+    }
+    
+    // 6. Check URL parameters (least secure - only if explicitly enabled)
+    const allowUrlParams = scriptElement.getAttribute('data-allow-url-params') === 'true';
+    if (allowUrlParams) {
+      const urlParams = new URLSearchParams(window.location.search);
+      userId = urlParams.get('userId') || urlParams.get('user_id') || urlParams.get('uid');
+      
+      if (userId) {
+        console.warn('⚠️ SECURITY WARNING: User ID from URL parameters is not secure!');
+        console.warn('URL parameters can be seen in browser history, logs, and referrer headers.');
+        console.warn('Consider using localStorage, sessionStorage, or server-side authentication instead.');
+        console.log('User ID from URL parameters:', userId);
+        return userId;
+      }
+    } else {
+      // Check if URL params exist but are disabled
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasUrlParams = urlParams.get('userId') || urlParams.get('user_id') || urlParams.get('uid');
+      if (hasUrlParams) {
+        console.warn('⚠️ URL parameters for userId are disabled for security reasons.');
+        console.warn('To enable URL parameters, add data-allow-url-params="true" to the script tag.');
+        console.warn('However, this is NOT RECOMMENDED for production use.');
+      }
+    }
+    
+    return null;
+  };
+  
+  // Set userId from multiple sources
+  config.userId = getUserId();
+  
   // Validate required configuration
   if (!config.apiUrl) {
     console.error('API URL is required. Add data-api-url attribute to the script tag.');
@@ -61,8 +195,15 @@
   }
   
   if (!config.userId) {
-    console.error('User ID is required. Add data-user-id attribute to the script tag.');
-    return;
+    console.warn('⚠️ No User ID found. Widget will wait for userId via postMessage or API call.');
+    console.warn('You can set userId via:');
+    console.warn('- data-user-id attribute');
+    console.warn('- localStorage.setItem("chatbot_user_id", "your-id")');
+    console.warn('- window.postMessage({type: "SET_USER_ID", userId: "your-id"}, "*")');
+    console.warn('- window.ChatbotWidget.setUserId("your-id")');
+    
+    // Don't return, let the widget load and wait for userId
+    // The widget will show a message asking for userId when user tries to send a message
   }
   
   // Check if we should hide on mobile
@@ -78,10 +219,11 @@
   let isLoading = false;
   let isNotionRagActive = config.notionRag;
   let inputValue = '';
+  let isHistoryView = false;
 
   // PostMessage handler
   const handlePostMessage = (event) => {
-    // ตรวจสอบว่า message มาจาก main-app และเป็น ERROR_MESSAGE
+    // Handle ERROR_MESSAGE from main-app
     if (event.data && event.data.source === 'main-app' && event.data.type === 'ERROR_MESSAGE') {
       const errorData = event.data.data;
       
@@ -112,6 +254,43 @@
       // Focus ที่ input
       textarea.focus();
     }
+    
+    // Handle SET_USER_ID message
+    if (event.data && event.data.type === 'SET_USER_ID') {
+      const newUserId = event.data.userId;
+      if (newUserId) {
+        config.userId = newUserId;
+        console.log('User ID updated via postMessage:', newUserId);
+        
+        // Store in localStorage for persistence
+        localStorage.setItem('chatbot_user_id', newUserId);
+        
+        // If widget was waiting for userId, now it can work properly
+        if (messages.length === 0 && isOpen) {
+          showWelcome();
+        }
+      }
+    }
+    
+    // Handle SET_CONFIG message for multiple settings
+    if (event.data && event.data.type === 'SET_CONFIG') {
+      const newConfig = event.data.config;
+      if (newConfig) {
+        // Update config with new values
+        Object.keys(newConfig).forEach(key => {
+          if (config.hasOwnProperty(key)) {
+            config[key] = newConfig[key];
+            console.log(`Config updated: ${key} = ${newConfig[key]}`);
+          }
+        });
+        
+        // Store userId in localStorage if provided
+        if (newConfig.userId) {
+          localStorage.setItem('chatbot_user_id', newConfig.userId);
+        }
+      }
+    }
+    
   };
 
   // API functions
@@ -263,6 +442,38 @@
       justify-content: space-between;
       font-weight: 600;
       font-size: 16px;
+    }
+    
+    .chatbot-widget-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .chatbot-widget-history-toggle {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .chatbot-widget-history-toggle:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .chatbot-widget-history-toggle.active {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .chatbot-widget-history-toggle svg {
+      width: 20px;
+      height: 20px;
     }
     
     .chatbot-widget-close {
@@ -588,6 +799,107 @@
       border-color: ${config.buttonColor};
     }
     
+    .chatbot-widget-history-header {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .chatbot-widget-history-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .chatbot-widget-new-chat {
+      background: ${config.buttonColor};
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    
+    .chatbot-widget-new-chat:hover {
+      background: ${config.buttonColor}dd;
+    }
+    
+    .chatbot-widget-history-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .chatbot-widget-history-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+    
+    .chatbot-widget-history-item:hover {
+      background: #f8fafc;
+      border-left-color: ${config.buttonColor}40;
+    }
+    
+    .chatbot-widget-history-item.active {
+      background: #e0e7ff;
+      border-left-color: ${config.buttonColor};
+    }
+    
+    .chatbot-widget-history-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .chatbot-widget-history-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .chatbot-widget-history-date {
+      font-size: 12px;
+      color: #64748b;
+    }
+    
+    .chatbot-widget-history-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .chatbot-widget-history-item:hover .chatbot-widget-history-actions {
+      opacity: 1;
+    }
+    
+    .chatbot-widget-history-delete {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background-color 0.2s ease;
+    }
+    
+    .chatbot-widget-history-delete:hover {
+      background: #fee2e2;
+    }
+    
     @media (max-width: 768px) {
       .chatbot-widget-window {
         width: calc(100vw - 40px);
@@ -615,7 +927,14 @@
   const header = document.createElement('div');
   header.className = 'chatbot-widget-header';
   header.innerHTML = `
-    <span>AI Assistant</span>
+    <div class="chatbot-widget-header-left">
+      <button class="chatbot-widget-history-toggle" title="Toggle Chat History">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <span>AI Assistant</span>
+    </div>
     <button class="chatbot-widget-close">${config.closeIcon}</button>
   `;
   
@@ -650,6 +969,7 @@
   
   // Get references to elements
   const closeButton = header.querySelector('.chatbot-widget-close');
+  const historyToggleButton = header.querySelector('.chatbot-widget-history-toggle');
   const textarea = inputContainer.querySelector('.chatbot-widget-textarea');
   const sendButton = inputContainer.querySelector('.chatbot-widget-send');
   const toggleButton = inputContainer.querySelector('.chatbot-widget-toggle');
@@ -671,6 +991,10 @@
   
   // Show welcome screen
   const showWelcome = () => {
+    // Switch back to chat view and remove toggle highlight
+    isHistoryView = false;
+    historyToggleButton.classList.remove('active');
+    
     messagesContainer.innerHTML = `
       <div class="chatbot-widget-welcome">
         <h3>Welcome to AI Assistant</h3>
@@ -693,6 +1017,136 @@
         sendMessage();
       });
     });
+  };
+
+  // Show chat history
+  const showChatHistory = () => {
+    if (chatHistory.length === 0) {
+      messagesContainer.innerHTML = `
+        <div class="chatbot-widget-welcome">
+          <h3>No Chat History</h3>
+          <p>Start a new conversation to see it here.</p>
+          <button class="chatbot-widget-new-chat">Start New Chat</button>
+        </div>
+      `;
+      
+      const newChatButton = messagesContainer.querySelector('.chatbot-widget-new-chat');
+      newChatButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent widget from closing
+        showWelcome();
+      });
+      return;
+    }
+
+    const historyHTML = chatHistory.map((chat, index) => {
+      const date = new Date(chat.created_at || chat.updated_at || Date.now());
+      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      return `
+        <div class="chatbot-widget-history-item ${chat.conversation_id === activeChat ? 'active' : ''}" 
+             data-chat-id="${chat.conversation_id}">
+          <div class="chatbot-widget-history-content">
+            <div class="chatbot-widget-history-title">${chat.title || 'Untitled Chat'}</div>
+            <div class="chatbot-widget-history-date">${formattedDate}</div>
+          </div>
+          <div class="chatbot-widget-history-actions">
+            <button class="chatbot-widget-history-delete" title="Delete this chat">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    messagesContainer.innerHTML = `
+      <div class="chatbot-widget-history-header">
+        <h3>Chat History</h3>
+        <button class="chatbot-widget-new-chat">New Chat</button>
+      </div>
+      <div class="chatbot-widget-history-list">
+        ${historyHTML}
+      </div>
+    `;
+
+    // Add event listeners
+    const historyItems = messagesContainer.querySelectorAll('.chatbot-widget-history-item');
+    historyItems.forEach(item => {
+      const chatId = item.dataset.chatId;
+      const deleteButton = item.querySelector('.chatbot-widget-history-delete');
+
+      // Click on item to load chat history
+      item.addEventListener('click', (e) => {
+        // Don't trigger if clicking on delete button
+        if (e.target.closest('.chatbot-widget-history-delete')) {
+          return;
+        }
+        loadChatHistory(chatId);
+      });
+
+      deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent triggering item click
+        deleteChatHistory(chatId);
+      });
+    });
+
+    const newChatButton = messagesContainer.querySelector('.chatbot-widget-new-chat');
+    newChatButton.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent widget from closing
+      showWelcome();
+    });
+  };
+
+  // Load chat history
+  const loadChatHistory = async (chatId) => {
+    if (!config.userId) {
+      console.warn('User ID not set, cannot load chat history');
+      return;
+    }
+
+    try {
+      const response = await api.fetchConversationMessages(chatId);
+      if (response && response.length > 0) {
+        messages.length = 0; // Clear current messages
+        messages.push(...response);
+        activeChat = chatId;
+        
+        // Clear and add all messages
+        messagesContainer.innerHTML = '';
+        messages.forEach(message => {
+          addMessage(message);
+        });
+        
+        // Switch back to chat view and remove toggle highlight
+        isHistoryView = false;
+        historyToggleButton.classList.remove('active');
+        
+        console.log('Chat history loaded:', chatId);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
+
+  // Delete chat history
+  const deleteChatHistory = async (chatId) => {
+    if (confirm('Are you sure you want to delete this chat?')) {
+      try {
+        // Remove from local array
+        chatHistory = chatHistory.filter(chat => chat.conversation_id !== chatId);
+        
+        // If this was the active chat, clear it
+        if (activeChat === chatId) {
+          activeChat = null;
+          messages.length = 0;
+          showWelcome();
+        } else {
+          // Refresh history view
+          showChatHistory();
+        }
+        
+        console.log('Chat deleted:', chatId);
+      } catch (error) {
+        console.error('Error deleting chat:', error);
+      }
+    }
   };
   
   // Simple markdown parser
@@ -1055,6 +1509,26 @@
     const input = textarea.value.trim();
     if (!input || isLoading) return;
     
+    // Check if userId is set
+    if (!config.userId) {
+      const errorMessage = {
+        id: Date.now(),
+        conversation_id: '',
+        message_id: messages.length + 1,
+        message_text: '⚠️ User ID is not set. Please set userId before sending messages.\n\nYou can set it via:\n• localStorage.setItem("chatbot_user_id", "your-id")\n• window.postMessage({type: "SET_USER_ID", userId: "your-id"}, "*")\n• window.ChatbotWidget.setUserId("your-id")',
+        notes: null,
+        chart_spec: null,
+        chart_notes: null,
+        sender_type: 'BOT',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      messages.push(errorMessage);
+      addMessage(errorMessage);
+      return;
+    }
+    
     // Add user message
     const userMessage = {
       id: Date.now(),
@@ -1090,11 +1564,17 @@
         if (newConversation) {
           if (Array.isArray(newConversation) && newConversation.length > 0) {
             conversationId = newConversation[0].conversation_id;
+            chatHistory.unshift(newConversation[0]);
           } else if (newConversation.conversation_id) {
             conversationId = newConversation.conversation_id;
+            chatHistory.unshift(newConversation);
           }
           activeChat = conversationId;
-          chatHistory.unshift(newConversation);
+          
+          // Update history view if currently showing
+          if (isHistoryView) {
+            showChatHistory();
+          }
         }
       }
       
@@ -1197,6 +1677,26 @@
     toggleButton.classList.toggle('active', isNotionRagActive);
   });
   
+  // History toggle event listener
+  historyToggleButton.addEventListener('click', () => {
+    isHistoryView = !isHistoryView;
+    historyToggleButton.classList.toggle('active', isHistoryView);
+    
+    if (isHistoryView) {
+      showChatHistory();
+    } else {
+      if (messages.length === 0) {
+        showWelcome();
+      } else {
+        // Show current messages
+        messagesContainer.innerHTML = '';
+        messages.forEach(message => {
+          addMessage(message);
+        });
+      }
+    }
+  });
+  
   // Close chat when clicking outside
   document.addEventListener('click', (event) => {
     if (isOpen && !widgetContainer.contains(event.target)) {
@@ -1207,7 +1707,18 @@
   
   // Load chat history on init
   const initWidget = async () => {
-    chatHistory = await api.fetchChatHistory();
+    if (config.userId) {
+      try {
+        chatHistory = await api.fetchChatHistory();
+        console.log('Chat history loaded:', chatHistory.length, 'conversations');
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        chatHistory = [];
+      }
+    } else {
+      console.warn('User ID not set, skipping chat history load');
+      chatHistory = [];
+    }
   };
   
   initWidget();
@@ -1241,6 +1752,36 @@
       isNotionRagActive = enabled;
       toggleButton.textContent = `Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}`;
       toggleButton.classList.toggle('active', isNotionRagActive);
+    },
+    // Set userId dynamically
+    setUserId: (userId) => {
+      if (userId) {
+        config.userId = userId;
+        localStorage.setItem('chatbot_user_id', userId);
+        console.log('User ID set via API:', userId);
+      }
+    },
+    // Get current userId
+    getUserId: () => {
+      return config.userId;
+    },
+    // Set multiple config options
+    setConfig: (newConfig) => {
+      Object.keys(newConfig).forEach(key => {
+        if (config.hasOwnProperty(key)) {
+          config[key] = newConfig[key];
+          console.log(`Config updated: ${key} = ${newConfig[key]}`);
+        }
+      });
+      
+      // Store userId in localStorage if provided
+      if (newConfig.userId) {
+        localStorage.setItem('chatbot_user_id', newConfig.userId);
+      }
+    },
+    // Get current config
+    getConfig: () => {
+      return { ...config };
     },
     // Method to handle external messages
     handleExternalMessage: (messageData) => {

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chatbot Widget Examples</title>
+    
+    <!-- Example: Meta tag method (server-side rendering) -->
+    <meta name="chatbot-user-id" content="38137">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .secure-method {
+            background: #f0fff4;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #38a169;
+        }
+        .insecure-method {
+            background: #fed7d7;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #e53e3e;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .security-note {
+            background: #fff5f5;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #f56565;
+            margin: 10px 0;
+        }
+        .best-practice {
+            background: #e6fffa;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #38b2ac;
+            margin: 10px 0;
+        }
+        button {
+            background: #38a169;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2f855a;
+        }
+        .demo-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔒 Secure Chatbot Widget - Best Practices</h1>
+    
+    <div class="warning">
+        ⚠️ SECURITY WARNING: Never use URL parameters for sensitive data like user IDs in production!
+    </div>
+
+    <h2>✅ Secure Methods (Recommended)</h2>
+
+    <div class="secure-method">
+        <h3>1. localStorage (Persistent Storage)</h3>
+        <p><strong>Security Level:</strong> 🔒 Secure (client-side only)</p>
+        <p><strong>Use Case:</strong> Remember user across browser sessions</p>
+        <div class="code">
+// Set userId in localStorage
+localStorage.setItem('chatbot_user_id', '38137');
+
+// The widget will automatically detect this
+        </div>
+        <div class="best-practice">
+            <strong>Best Practice:</strong> Clear localStorage when user logs out
+        </div>
+        <button onclick="setLocalStorage()">Set localStorage</button>
+        <button onclick="clearLocalStorage()">Clear localStorage</button>
+        <p><strong>Current:</strong> <span id="localstorage-status">Not set</span></p>
+    </div>
+
+    <div class="secure-method">
+        <h3>2. sessionStorage (Session-Only Storage)</h3>
+        <p><strong>Security Level:</strong> 🔒 Secure (cleared when tab closes)</p>
+        <p><strong>Use Case:</strong> Temporary session data</p>
+        <div class="code">
+// Set userId in sessionStorage
+sessionStorage.setItem('chatbot_user_id', '38137');
+
+// Automatically cleared when browser tab closes
+        </div>
+        <div class="best-practice">
+            <strong>Best Practice:</strong> Use for temporary sessions, automatically secure
+        </div>
+        <button onclick="setSessionStorage()">Set sessionStorage</button>
+        <button onclick="clearSessionStorage()">Clear sessionStorage</button>
+        <p><strong>Current:</strong> <span id="sessionstorage-status">Not set</span></p>
+    </div>
+
+    <div class="secure-method">
+        <h3>3. Global Variable (Before Script Load)</h3>
+        <p><strong>Security Level:</strong> 🔒 Secure (if set before script loads)</p>
+        <p><strong>Use Case:</strong> Server-side rendering or early initialization</p>
+        <div class="code">
+// Set before loading the widget script
+window.CHATBOT_USER_ID = '38137';
+
+// Then load the widget
+&lt;script src="chatbot-widget.js"&gt;&lt;/script&gt;
+        </div>
+        <div class="best-practice">
+            <strong>Best Practice:</strong> Set this before the widget script loads
+        </div>
+        <button onclick="setGlobalVariable()">Set Global Variable</button>
+        <button onclick="clearGlobalVariable()">Clear Global Variable</button>
+        <p><strong>Current:</strong> <span id="global-variable-status">Not set</span></p>
+    </div>
+
+    <div class="secure-method">
+        <h3>4. Meta Tag (Server-Side Rendering)</h3>
+        <p><strong>Security Level:</strong> 🔒 Secure (server-generated)</p>
+        <p><strong>Use Case:</strong> Server-side rendering with user authentication</p>
+        <div class="code">
+&lt;meta name="chatbot-user-id" content="38137"&gt;
+        </div>
+        <div class="best-practice">
+            <strong>Best Practice:</strong> Generate this server-side based on authenticated user
+        </div>
+        <p><strong>Current:</strong> <span id="meta-tag-status">38137 (set in this example)</span></p>
+    </div>
+
+    <div class="secure-method">
+        <h3>5. postMessage API (Dynamic)</h3>
+        <p><strong>Security Level:</strong> 🔒 Secure (client-to-client communication)</p>
+        <p><strong>Use Case:</strong> Dynamic user authentication</p>
+        <div class="code">
+// Send userId via postMessage
+window.postMessage({type: 'SET_USER_ID', userId: '38137'}, '*');
+
+// Or set multiple config options
+window.postMessage({
+  type: 'SET_CONFIG', 
+  config: {
+    userId: '38137',
+    buttonColor: '#ff0000'
+  }
+}, '*');
+        </div>
+        <div class="best-practice">
+            <strong>Best Practice:</strong> Use after user authentication is complete
+        </div>
+        <button onclick="sendPostMessage()">Send postMessage</button>
+        <button onclick="sendConfigPostMessage()">Send Config postMessage</button>
+    </div>
+
+    <div class="secure-method">
+        <h3>6. JavaScript API (Dynamic)</h3>
+        <p><strong>Security Level:</strong> 🔒 Secure (direct API call)</p>
+        <p><strong>Use Case:</strong> After widget is loaded</p>
+        <div class="code">
+// Use the exposed API
+window.ChatbotWidget.setUserId('38137');
+
+// Or set multiple config options
+window.ChatbotWidget.setConfig({
+  userId: '38137',
+  buttonColor: '#ff0000'
+});
+        </div>
+        <div class="best-practice">
+            <strong>Best Practice:</strong> Call after widget is fully loaded
+        </div>
+        <button onclick="setUserIdAPI()">Set User ID via API</button>
+        <button onclick="setConfigAPI()">Set Config via API</button>
+        <button onclick="getCurrentConfig()">Get Current Config</button>
+        <p><strong>Current config:</strong> <span id="current-config">Not loaded</span></p>
+    </div>
+
+    <h2>❌ Insecure Methods (Development Only)</h2>
+
+    <div class="insecure-method">
+        <h3>URL Parameters (NOT SECURE)</h3>
+        <p><strong>Security Level:</strong> 🚨 Insecure (visible everywhere)</p>
+        <p><strong>Use Case:</strong> Development/testing only</p>
+        <div class="code">
+// NOT RECOMMENDED FOR PRODUCTION
+https://yoursite.com?userId=38137
+
+// Requires explicit permission
+&lt;script data-allow-url-params="true" src="chatbot-widget.js"&gt;&lt;/script&gt;
+        </div>
+        <div class="security-note">
+            <strong>Security Risks:</strong>
+            <ul>
+                <li>Visible in browser history</li>
+                <li>Visible in server logs</li>
+                <li>Visible in referrer headers</li>
+                <li>Visible in network inspection tools</li>
+                <li>Visible in browser developer tools</li>
+            </ul>
+        </div>
+        <button onclick="enableUrlParams()">Enable URL Params (Demo)</button>
+        <button onclick="disableUrlParams()">Disable URL Params</button>
+    </div>
+
+    <div class="demo-section">
+        <h2>🔧 Live Demo</h2>
+        <p>Try the secure methods above and see the chatbot widget update in real-time!</p>
+        <button onclick="window.ChatbotWidget.open()">Open Widget</button>
+        <button onclick="window.ChatbotWidget.close()">Close Widget</button>
+        <button onclick="window.ChatbotWidget.toggle()">Toggle Widget</button>
+    </div>
+
+    <div class="secure-method">
+        <h3>🔐 Production Security Checklist</h3>
+        <ul>
+            <li>✅ Never use URL parameters for sensitive data</li>
+            <li>✅ Use server-side authentication when possible</li>
+            <li>✅ Clear localStorage/sessionStorage on logout</li>
+            <li>✅ Validate userId on server-side</li>
+            <li>✅ Use HTTPS in production</li>
+            <li>✅ Implement proper session management</li>
+            <li>✅ Consider using JWT tokens for authentication</li>
+        </ul>
+    </div>
+
+    <script>
+        // Update status displays
+        function updateStatus() {
+            document.getElementById('localstorage-status').textContent = 
+                localStorage.getItem('chatbot_user_id') || 'Not set';
+            document.getElementById('sessionstorage-status').textContent = 
+                sessionStorage.getItem('chatbot_user_id') || 'Not set';
+            document.getElementById('global-variable-status').textContent = 
+                window.CHATBOT_USER_ID || 'Not set';
+            document.getElementById('meta-tag-status').textContent = 
+                document.querySelector('meta[name="chatbot-user-id"]')?.getAttribute('content') || 'Not set';
+        }
+
+        // localStorage functions
+        function setLocalStorage() {
+            localStorage.setItem('chatbot_user_id', '38137');
+            updateStatus();
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('chatbot_user_id');
+            updateStatus();
+        }
+
+        // sessionStorage functions
+        function setSessionStorage() {
+            sessionStorage.setItem('chatbot_user_id', '38137');
+            updateStatus();
+        }
+
+        function clearSessionStorage() {
+            sessionStorage.removeItem('chatbot_user_id');
+            updateStatus();
+        }
+
+        // Global variable functions
+        function setGlobalVariable() {
+            window.CHATBOT_USER_ID = '38137';
+            updateStatus();
+        }
+
+        function clearGlobalVariable() {
+            delete window.CHATBOT_USER_ID;
+            updateStatus();
+        }
+
+        // postMessage functions
+        function sendPostMessage() {
+            window.postMessage({type: 'SET_USER_ID', userId: '38137'}, '*');
+        }
+
+        function sendConfigPostMessage() {
+            window.postMessage({
+                type: 'SET_CONFIG', 
+                config: {
+                    userId: '38137',
+                    buttonColor: '#ff0000'
+                }
+            }, '*');
+        }
+
+        // JavaScript API functions
+        function setUserIdAPI() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setUserId('38137');
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function setConfigAPI() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setConfig({
+                    userId: '38137',
+                    buttonColor: '#ff0000'
+                });
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function getCurrentConfig() {
+            if (window.ChatbotWidget) {
+                const config = window.ChatbotWidget.getConfig();
+                document.getElementById('current-config').textContent = JSON.stringify(config, null, 2);
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        // URL params functions (for demo only)
+        function enableUrlParams() {
+            const url = new URL(window.location);
+            url.searchParams.set('userId', '38137');
+            window.history.pushState({}, '', url);
+            alert('URL parameters enabled for demo. Check browser console for security warnings.');
+        }
+
+        function disableUrlParams() {
+            const url = new URL(window.location);
+            url.searchParams.delete('userId');
+            window.history.pushState({}, '', url);
+        }
+
+        // Update status on page load
+        window.addEventListener('load', updateStatus);
+    </script>
+
+    <!-- Load the chatbot widget -->
+    <script src="chatbot-widget.js" id="chatbot-widget" data-api-url="http://192.168.50.119:5678/webhook"></script>
+</body>
+</html> 

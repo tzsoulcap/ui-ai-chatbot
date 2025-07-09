@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Widget Examples</title>
+    
+    <!-- Example 6: Meta tag method -->
+    <meta name="chatbot-user-id" content="38137">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .example {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007cba;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .method {
+            background: #e6fffa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #38b2ac;
+        }
+        .priority {
+            background: #fed7d7;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin: 10px 0;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .demo-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chatbot Widget - Multiple Ways to Set User ID</h1>
+    
+    <div class="priority">
+        <strong>Priority Order:</strong> data-attribute → URL params → localStorage → sessionStorage → global variable → meta tag → postMessage → JavaScript API
+    </div>
+
+    <h2>Method 1: Data Attribute (Highest Priority)</h2>
+    <div class="example">
+        <p>Set userId directly in the script tag:</p>
+        <div class="code">
+&lt;script src="chatbot-widget.js" id="chatbot-widget" 
+        data-api-url="http://192.168.50.119:5678/webhook" 
+        data-user-id="38137"&gt;&lt;/script&gt;
+        </div>
+    </div>
+
+    <h2>Method 2: URL Parameters</h2>
+    <div class="example">
+        <p>Add userId to the URL:</p>
+        <div class="code">
+https://yoursite.com?userId=38137
+https://yoursite.com?user_id=38137
+https://yoursite.com?uid=38137
+        </div>
+        <p><strong>Current URL:</strong> <span id="current-url"></span></p>
+        <button onclick="setUrlParam()">Set URL Parameter</button>
+        <button onclick="clearUrlParam()">Clear URL Parameter</button>
+    </div>
+
+    <h2>Method 3: localStorage</h2>
+    <div class="example">
+        <p>Store userId in browser's localStorage:</p>
+        <div class="code">
+localStorage.setItem('chatbot_user_id', '38137');
+localStorage.setItem('user_id', '38137');
+localStorage.setItem('uid', '38137');
+        </div>
+        <button onclick="setLocalStorage()">Set localStorage</button>
+        <button onclick="clearLocalStorage()">Clear localStorage</button>
+        <p><strong>Current localStorage:</strong> <span id="localstorage-status"></span></p>
+    </div>
+
+    <h2>Method 4: sessionStorage</h2>
+    <div class="example">
+        <p>Store userId in browser's sessionStorage (cleared when tab closes):</p>
+        <div class="code">
+sessionStorage.setItem('chatbot_user_id', '38137');
+sessionStorage.setItem('user_id', '38137');
+sessionStorage.setItem('uid', '38137');
+        </div>
+        <button onclick="setSessionStorage()">Set sessionStorage</button>
+        <button onclick="clearSessionStorage()">Clear sessionStorage</button>
+        <p><strong>Current sessionStorage:</strong> <span id="sessionstorage-status"></span></p>
+    </div>
+
+    <h2>Method 5: Global Variable</h2>
+    <div class="example">
+        <p>Set a global variable before loading the script:</p>
+        <div class="code">
+window.CHATBOT_USER_ID = '38137';
+        </div>
+        <button onclick="setGlobalVariable()">Set Global Variable</button>
+        <button onclick="clearGlobalVariable()">Clear Global Variable</button>
+        <p><strong>Current global variable:</strong> <span id="global-variable-status"></span></p>
+    </div>
+
+    <h2>Method 6: Meta Tag</h2>
+    <div class="example">
+        <p>Add a meta tag in the HTML head (already set in this example):</p>
+        <div class="code">
+&lt;meta name="chatbot-user-id" content="38137"&gt;
+        </div>
+        <p><strong>Meta tag value:</strong> <span id="meta-tag-status"></span></p>
+    </div>
+
+    <h2>Method 7: postMessage API</h2>
+    <div class="example">
+        <p>Send userId via postMessage after widget is loaded:</p>
+        <div class="code">
+window.postMessage({type: 'SET_USER_ID', userId: '38137'}, '*');
+        </div>
+        <button onclick="sendPostMessage()">Send postMessage</button>
+        <p>Or set multiple config options:</p>
+        <div class="code">
+window.postMessage({
+  type: 'SET_CONFIG', 
+  config: {
+    userId: '38137',
+    buttonColor: '#ff0000',
+    position: 'left'
+  }
+}, '*');
+        </div>
+        <button onclick="sendConfigPostMessage()">Send Config postMessage</button>
+    </div>
+
+    <h2>Method 8: JavaScript API</h2>
+    <div class="example">
+        <p>Use the exposed ChatbotWidget API:</p>
+        <div class="code">
+window.ChatbotWidget.setUserId('38137');
+window.ChatbotWidget.setConfig({
+  userId: '38137',
+  buttonColor: '#ff0000',
+  position: 'left'
+});
+        </div>
+        <button onclick="setUserIdAPI()">Set User ID via API</button>
+        <button onclick="setConfigAPI()">Set Config via API</button>
+        <button onclick="getCurrentConfig()">Get Current Config</button>
+        <p><strong>Current config:</strong> <span id="current-config"></span></p>
+    </div>
+
+    <div class="demo-section">
+        <h2>Live Demo</h2>
+        <p>Try different methods above and see the chatbot widget update in real-time!</p>
+        <button onclick="window.ChatbotWidget.open()">Open Widget</button>
+        <button onclick="window.ChatbotWidget.close()">Close Widget</button>
+        <button onclick="window.ChatbotWidget.toggle()">Toggle Widget</button>
+    </div>
+
+    <script>
+        // Update status displays
+        function updateStatus() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('localstorage-status').textContent = 
+                localStorage.getItem('chatbot_user_id') || localStorage.getItem('user_id') || localStorage.getItem('uid') || 'Not set';
+            document.getElementById('sessionstorage-status').textContent = 
+                sessionStorage.getItem('chatbot_user_id') || sessionStorage.getItem('user_id') || sessionStorage.getItem('uid') || 'Not set';
+            document.getElementById('global-variable-status').textContent = 
+                window.CHATBOT_USER_ID || 'Not set';
+            document.getElementById('meta-tag-status').textContent = 
+                document.querySelector('meta[name="chatbot-user-id"]')?.getAttribute('content') || 'Not set';
+        }
+
+        // URL parameter functions
+        function setUrlParam() {
+            const url = new URL(window.location);
+            url.searchParams.set('userId', '38137');
+            window.history.pushState({}, '', url);
+            updateStatus();
+        }
+
+        function clearUrlParam() {
+            const url = new URL(window.location);
+            url.searchParams.delete('userId');
+            url.searchParams.delete('user_id');
+            url.searchParams.delete('uid');
+            window.history.pushState({}, '', url);
+            updateStatus();
+        }
+
+        // localStorage functions
+        function setLocalStorage() {
+            localStorage.setItem('chatbot_user_id', '38137');
+            updateStatus();
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('chatbot_user_id');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('uid');
+            updateStatus();
+        }
+
+        // sessionStorage functions
+        function setSessionStorage() {
+            sessionStorage.setItem('chatbot_user_id', '38137');
+            updateStatus();
+        }
+
+        function clearSessionStorage() {
+            sessionStorage.removeItem('chatbot_user_id');
+            sessionStorage.removeItem('user_id');
+            sessionStorage.removeItem('uid');
+            updateStatus();
+        }
+
+        // Global variable functions
+        function setGlobalVariable() {
+            window.CHATBOT_USER_ID = '38137';
+            updateStatus();
+        }
+
+        function clearGlobalVariable() {
+            delete window.CHATBOT_USER_ID;
+            updateStatus();
+        }
+
+        // postMessage functions
+        function sendPostMessage() {
+            window.postMessage({type: 'SET_USER_ID', userId: '38137'}, '*');
+        }
+
+        function sendConfigPostMessage() {
+            window.postMessage({
+                type: 'SET_CONFIG', 
+                config: {
+                    userId: '38137',
+                    buttonColor: '#ff0000',
+                    position: 'left'
+                }
+            }, '*');
+        }
+
+        // JavaScript API functions
+        function setUserIdAPI() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setUserId('38137');
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function setConfigAPI() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setConfig({
+                    userId: '38137',
+                    buttonColor: '#ff0000',
+                    position: 'left'
+                });
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function getCurrentConfig() {
+            if (window.ChatbotWidget) {
+                const config = window.ChatbotWidget.getConfig();
+                document.getElementById('current-config').textContent = JSON.stringify(config, null, 2);
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        // Update status on page load
+        window.addEventListener('load', updateStatus);
+    </script>
+
+    <!-- Load the chatbot widget -->
+    <script src="chatbot-widget.js" id="chatbot-widget" data-api-url="http://192.168.50.119:5678/webhook"></script>
+</body>
+</html> 

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat History Toggle Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .feature {
+            background: #f0fff4;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #38a169;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .demo-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .instruction {
+            background: #e6fffa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #38b2ac;
+            margin: 20px 0;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .feature-list {
+            background: #fff5f5;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #f56565;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Chat History Toggle Feature Demo</h1>
+    
+    <div class="feature">
+        <h3>✨ New Feature: Chat History Toggle</h3>
+        <p>The chatbot widget now includes a toggle button to view and manage chat history!</p>
+    </div>
+
+    <div class="feature-list">
+        <h3>🔧 Features Added:</h3>
+        <ul>
+            <li><strong>📋 History Toggle Button</strong> - Click the clipboard icon in the header</li>
+            <li><strong>📂 Load Previous Chats</strong> - Click the folder icon to load a chat</li>
+            <li><strong>🗑️ Delete Chats</strong> - Click the trash icon to delete a chat</li>
+            <li><strong>🆕 New Chat Button</strong> - Start a fresh conversation</li>
+            <li><strong>📅 Date & Time Display</strong> - See when each chat was created</li>
+            <li><strong>🎯 Active Chat Highlighting</strong> - Current chat is highlighted</li>
+        </ul>
+    </div>
+
+    <div class="instruction">
+        <h3>📖 How to Use:</h3>
+        <ol>
+            <li><strong>Open the widget</strong> - Click the chat button</li>
+            <li><strong>Click the 📋 icon</strong> - In the header to toggle history view</li>
+            <li><strong>View your chats</strong> - See all previous conversations</li>
+            <li><strong>Load a chat</strong> - Click 📂 to load a specific conversation</li>
+            <li><strong>Delete a chat</strong> - Click 🗑️ to remove a conversation</li>
+            <li><strong>Start new chat</strong> - Click "New Chat" button</li>
+        </ol>
+    </div>
+
+    <div class="demo-section">
+        <h2>🎮 Live Demo</h2>
+        <p>Try the chat history feature:</p>
+        <button onclick="setUserId()">Set User ID</button>
+        <button onclick="window.ChatbotWidget.open()">Open Widget</button>
+        <button onclick="window.ChatbotWidget.close()">Close Widget</button>
+        <button onclick="sendTestMessage()">Send Test Message</button>
+        <button onclick="clearAll()">Clear All</button>
+    </div>
+
+    <div class="code">
+&lt;!-- Your embed code with chat history feature --&gt;
+&lt;script src="chatbot-widget.js?v=2.0.0" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-user-id="38137"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+    </div>
+
+    <div class="feature">
+        <h3>🎨 UI Features:</h3>
+        <ul>
+            <li><strong>Responsive Design</strong> - Works on mobile and desktop</li>
+            <li><strong>Smooth Animations</strong> - Smooth transitions between views</li>
+            <li><strong>Hover Effects</strong> - Interactive buttons and items</li>
+            <li><strong>Visual Feedback</strong> - Clear indication of active states</li>
+            <li><strong>Accessibility</strong> - Proper titles and keyboard navigation</li>
+        </ul>
+    </div>
+
+    <div class="instruction">
+        <h3>🔧 Technical Details:</h3>
+        <ul>
+            <li><strong>State Management</strong> - Tracks current view (chat vs history)</li>
+            <li><strong>API Integration</strong> - Fetches and manages chat history</li>
+            <li><strong>Error Handling</strong> - Graceful handling of API errors</li>
+            <li><strong>Cache Management</strong> - Efficient loading and updating</li>
+            <li><strong>Event Listeners</strong> - Proper cleanup and management</li>
+        </ul>
+    </div>
+
+    <script>
+        // Demo functions
+        function setUserId() {
+            localStorage.setItem('chatbot_user_id', '38137');
+            alert('User ID set! Refresh page to see chat history.');
+        }
+
+        function sendTestMessage() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.open();
+                setTimeout(() => {
+                    const textarea = document.querySelector('.chatbot-widget-textarea');
+                    if (textarea) {
+                        textarea.value = 'Hello! This is a test message.';
+                        textarea.dispatchEvent(new Event('input'));
+                        const sendButton = document.querySelector('.chatbot-widget-send');
+                        if (sendButton && !sendButton.disabled) {
+                            sendButton.click();
+                        }
+                    }
+                }, 1000);
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function clearAll() {
+            localStorage.removeItem('chatbot_user_id');
+            delete window.CHATBOT_USER_ID;
+            alert('All data cleared! Refresh page to reset.');
+        }
+
+        // Set userId for demo
+        window.addEventListener('load', function() {
+            localStorage.setItem('chatbot_user_id', '38137');
+            console.log('Demo: User ID set to 38137');
+        });
+    </script>
+
+    <!-- Load the chatbot widget -->
+    <script src="chatbot-widget.js?v=2.0.0" 
+      id="chatbot-widget"
+      data-api-url="http://192.168.50.119:5678/webhook"
+      data-user-id="38137"
+      data-button-color="#7c3aed"
+      data-widget-width="400px"
+      data-widget-height="600px"
+    ></script>
+</body>
+</html> 

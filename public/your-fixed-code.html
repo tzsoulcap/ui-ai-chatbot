@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Fixed Chatbot Widget Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .success {
+            background: #f0fff4;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #38a169;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fed7d7;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #e53e3e;
+            margin: 20px 0;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Your Fixed Chatbot Widget Code</h1>
+    
+    <div class="success">
+        <h3>✅ Fixed Version (with cache busting)</h3>
+        <p>This version includes cache busting to ensure the updated widget loads.</p>
+    </div>
+
+    <div class="code">
+&lt;script src="http://localhost:3000/chatbot-widget.js?v=2.0.0" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+
+&lt;script&gt;
+  // Send user ID via postMessage when widget loads
+  window.addEventListener('load', function() {
+    // Wait a bit for the widget to initialize
+    setTimeout(() => {
+      window.postMessage({
+        type: 'SET_USER_ID', 
+        userId: '38137'
+      }, '*');
+      console.log('postMessage sent with userId: 38137');
+    }, 1000);
+  });
+&lt;/script&gt;
+    </div>
+
+    <div class="warning">
+        <h3>⚠️ If you still see the old error message:</h3>
+        <ol>
+            <li><strong>Hard refresh</strong> the page (Ctrl+F5 or Cmd+Shift+R)</li>
+            <li><strong>Clear browser cache</strong> for this site</li>
+            <li><strong>Check Network tab</strong> to ensure the new file is loaded</li>
+            <li><strong>Try a different method</strong> to set userId (see below)</li>
+        </ol>
+    </div>
+
+    <h2>Alternative Methods (More Reliable)</h2>
+
+    <h3>Method 1: localStorage (Recommended)</h3>
+    <div class="code">
+&lt;script&gt;
+  // Set userId before loading widget
+  localStorage.setItem('chatbot_user_id', '38137');
+&lt;/script&gt;
+
+&lt;script src="http://localhost:3000/chatbot-widget.js?v=2.0.0" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+    </div>
+
+    <h3>Method 2: Data Attribute (Simplest)</h3>
+    <div class="code">
+&lt;script src="http://localhost:3000/chatbot-widget.js?v=2.0.0" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-user-id="38137"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+    </div>
+
+    <h3>Method 3: Global Variable</h3>
+    <div class="code">
+&lt;script&gt;
+  // Set userId before loading widget
+  window.CHATBOT_USER_ID = '38137';
+&lt;/script&gt;
+
+&lt;script src="http://localhost:3000/chatbot-widget.js?v=2.0.0" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+    </div>
+
+    <div class="success">
+        <h3>🔧 Debugging Steps:</h3>
+        <ol>
+            <li>Open browser Developer Tools (F12)</li>
+            <li>Go to Network tab</li>
+            <li>Refresh the page</li>
+            <li>Look for <code>chatbot-widget.js</code> in the list</li>
+            <li>Check if it loads successfully (status 200)</li>
+            <li>Go to Console tab and look for warnings/errors</li>
+        </ol>
+    </div>
+
+    <button onclick="testPostMessage()">Test postMessage</button>
+    <button onclick="testLocalStorage()">Test localStorage</button>
+    <button onclick="testGlobalVariable()">Test Global Variable</button>
+    <button onclick="window.ChatbotWidget.open()">Open Widget</button>
+
+    <script>
+        function testPostMessage() {
+            window.postMessage({
+                type: 'SET_USER_ID', 
+                userId: '38137'
+            }, '*');
+            alert('postMessage sent! Check console for confirmation.');
+        }
+
+        function testLocalStorage() {
+            localStorage.setItem('chatbot_user_id', '38137');
+            alert('localStorage set! Refresh page to see effect.');
+        }
+
+        function testGlobalVariable() {
+            window.CHATBOT_USER_ID = '38137';
+            alert('Global variable set! Refresh page to see effect.');
+        }
+
+        // Your original code (with cache busting)
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                window.postMessage({
+                    type: 'SET_USER_ID', 
+                    userId: '38137'
+                }, '*');
+                console.log('postMessage sent with userId: 38137');
+            }, 1000);
+        });
+    </script>
+
+    <!-- Load the chatbot widget with cache busting -->
+    <script src="chatbot-widget.js?v=2.0.0" 
+      id="chatbot-widget"
+      data-api-url="http://192.168.50.119:5678/webhook"
+      data-button-color="#7c3aed"
+      data-widget-width="400px"
+      data-widget-height="600px"
+    ></script>
+</body>
+</html> 

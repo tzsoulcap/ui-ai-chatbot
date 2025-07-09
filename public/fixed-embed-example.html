@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Chatbot Widget Embed Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .example {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007cba;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .success {
+            background: #f0fff4;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #38a169;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fed7d7;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #e53e3e;
+            margin: 20px 0;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .demo-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fixed Chatbot Widget Embed Example</h1>
+    
+    <div class="success">
+        <h3>✅ Problem Fixed!</h3>
+        <p>The widget now loads even without userId and waits for postMessage to set it.</p>
+    </div>
+
+    <div class="example">
+        <h3>Your Original Code (Fixed):</h3>
+        <div class="code">
+&lt;script src="http://localhost:3000/chatbot-widget.js" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+
+&lt;script&gt;
+  // Send user ID via postMessage when widget loads
+  window.addEventListener('load', function() {
+    // Wait a bit for the widget to initialize
+    setTimeout(() => {
+      window.postMessage({
+        type: 'SET_USER_ID', 
+        userId: '38137'
+      }, '*');
+    }, 1000);
+  });
+&lt;/script&gt;
+        </div>
+    </div>
+
+    <div class="example">
+        <h3>Alternative Methods (More Reliable):</h3>
+        
+        <h4>Method 1: localStorage (Recommended)</h4>
+        <div class="code">
+&lt;script&gt;
+  // Set userId before loading widget
+  localStorage.setItem('chatbot_user_id', '38137');
+&lt;/script&gt;
+
+&lt;script src="http://localhost:3000/chatbot-widget.js" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+        </div>
+        
+        <h4>Method 2: Global Variable</h4>
+        <div class="code">
+&lt;script&gt;
+  // Set userId before loading widget
+  window.CHATBOT_USER_ID = '38137';
+&lt;/script&gt;
+
+&lt;script src="http://localhost:3000/chatbot-widget.js" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+        </div>
+        
+        <h4>Method 3: Data Attribute (Simplest)</h4>
+        <div class="code">
+&lt;script src="http://localhost:3000/chatbot-widget.js" 
+  id="chatbot-widget"
+  data-api-url="http://192.168.50.119:5678/webhook"
+  data-user-id="38137"
+  data-button-color="#7c3aed"
+  data-widget-width="400px"
+  data-widget-height="600px"
+&gt;&lt;/script&gt;
+        </div>
+    </div>
+
+    <div class="warning">
+        <h3>⚠️ Important Notes:</h3>
+        <ul>
+            <li><strong>Widget now loads without userId</strong> - It will show a message asking for userId if you try to send a message</li>
+            <li><strong>postMessage timing</strong> - Make sure to wait for widget to load before sending postMessage</li>
+            <li><strong>Better alternatives</strong> - localStorage or data-attribute are more reliable than postMessage</li>
+            <li><strong>Check console</strong> - Look for warnings or errors in browser console</li>
+        </ul>
+    </div>
+
+    <div class="demo-section">
+        <h2>🔧 Live Demo</h2>
+        <p>Try different methods to set userId:</p>
+        <button onclick="setLocalStorage()">Set localStorage</button>
+        <button onclick="setGlobalVariable()">Set Global Variable</button>
+        <button onclick="sendPostMessage()">Send postMessage</button>
+        <button onclick="setUserIdAPI()">Set via API</button>
+        <button onclick="clearAll()">Clear All</button>
+        <br><br>
+        <button onclick="window.ChatbotWidget.open()">Open Widget</button>
+        <button onclick="window.ChatbotWidget.close()">Close Widget</button>
+        <button onclick="window.ChatbotWidget.toggle()">Toggle Widget</button>
+    </div>
+
+    <div class="example">
+        <h3>Debugging Tips:</h3>
+        <ul>
+            <li><strong>Check Network tab</strong> - Make sure chatbot-widget.js loads successfully</li>
+            <li><strong>Check Console</strong> - Look for warnings about missing userId</li>
+            <li><strong>Check Elements</strong> - Verify the widget container is added to DOM</li>
+            <li><strong>Try different methods</strong> - If postMessage doesn't work, try localStorage</li>
+        </ul>
+    </div>
+
+    <script>
+        // Demo functions
+        function setLocalStorage() {
+            localStorage.setItem('chatbot_user_id', '38137');
+            alert('localStorage set! Refresh page to see effect.');
+        }
+
+        function setGlobalVariable() {
+            window.CHATBOT_USER_ID = '38137';
+            alert('Global variable set! Refresh page to see effect.');
+        }
+
+        function sendPostMessage() {
+            window.postMessage({
+                type: 'SET_USER_ID', 
+                userId: '38137'
+            }, '*');
+            alert('postMessage sent! Check widget.');
+        }
+
+        function setUserIdAPI() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setUserId('38137');
+                alert('User ID set via API!');
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function clearAll() {
+            localStorage.removeItem('chatbot_user_id');
+            delete window.CHATBOT_USER_ID;
+            alert('All userId sources cleared!');
+        }
+
+        // Your original code (fixed)
+        window.addEventListener('load', function() {
+            // Wait a bit for the widget to initialize
+            setTimeout(() => {
+                window.postMessage({
+                    type: 'SET_USER_ID', 
+                    userId: '38137'
+                }, '*');
+                console.log('postMessage sent with userId: 38137');
+            }, 1000);
+        });
+    </script>
+
+    <!-- Load the chatbot widget -->
+    <script src="chatbot-widget.js?v=2.0.0" 
+      id="chatbot-widget"
+      data-api-url="http://192.168.50.119:5678/webhook"
+      data-button-color="#7c3aed"
+      data-widget-width="400px"
+      data-widget-height="600px"
+    ></script>
+</body>
+</html> 
