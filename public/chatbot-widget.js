@@ -121,7 +121,7 @@
     let userId = scriptElement.getAttribute('data-user-id');
     
     if (userId) {
-      console.log('User ID from data attribute:', userId);
+      // console.log('User ID from data attribute:', userId);
       return userId;
     }
     
@@ -131,7 +131,7 @@
              localStorage.getItem('uid');
     
     if (userId) {
-      console.log('User ID from localStorage:', userId);
+      // console.log('User ID from localStorage:', userId);
       return userId;
     }
     
@@ -141,20 +141,20 @@
              sessionStorage.getItem('uid');
     
     if (userId) {
-      console.log('User ID from sessionStorage:', userId);
+      // console.log('User ID from sessionStorage:', userId);
       return userId;
     }
     
     // 4. Check global variable
     if (window.CHATBOT_USER_ID) {
-      console.log('User ID from global variable:', window.CHATBOT_USER_ID);
+      // console.log('User ID from global variable:', window.CHATBOT_USER_ID);
       return window.CHATBOT_USER_ID;
     }
     
     // 5. Check meta tag
     const metaTag = document.querySelector('meta[name="chatbot-user-id"]');
     if (metaTag && metaTag.getAttribute('content')) {
-      console.log('User ID from meta tag:', metaTag.getAttribute('content'));
+      // console.log('User ID from meta tag:', metaTag.getAttribute('content'));
       return metaTag.getAttribute('content');
     }
     
@@ -168,7 +168,7 @@
         console.warn('⚠️ SECURITY WARNING: User ID from URL parameters is not secure!');
         console.warn('URL parameters can be seen in browser history, logs, and referrer headers.');
         console.warn('Consider using localStorage, sessionStorage, or server-side authentication instead.');
-        console.log('User ID from URL parameters:', userId);
+        // console.log('User ID from URL parameters:', userId);
         return userId;
       }
     } else {
@@ -260,7 +260,7 @@
       const newUserId = event.data.userId;
       if (newUserId) {
         config.userId = newUserId;
-        console.log('User ID updated via postMessage:', newUserId);
+        // console.log('User ID updated via postMessage:', newUserId);
         
         // Store in localStorage for persistence
         localStorage.setItem('chatbot_user_id', newUserId);
@@ -280,7 +280,7 @@
         Object.keys(newConfig).forEach(key => {
           if (config.hasOwnProperty(key)) {
             config[key] = newConfig[key];
-            console.log(`Config updated: ${key} = ${newConfig[key]}`);
+            // console.log(`Config updated: ${key} = ${newConfig[key]}`);
           }
         });
         
@@ -1118,7 +1118,7 @@
         isHistoryView = false;
         historyToggleButton.classList.remove('active');
         
-        console.log('Chat history loaded:', chatId);
+        // console.log('Chat history loaded:', chatId);
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
@@ -1142,7 +1142,7 @@
           showChatHistory();
         }
         
-        console.log('Chat deleted:', chatId);
+        // console.log('Chat deleted:', chatId);
       } catch (error) {
         console.error('Error deleting chat:', error);
       }
@@ -1177,17 +1177,17 @@
 
   // Simple chart renderer for widget
   const renderChart = (chartSpec) => {
-    console.log('Rendering chart with spec:', chartSpec);
-    console.log('Chart spec type:', typeof chartSpec);
-    console.log('Chart spec keys:', Object.keys(chartSpec || {}));
+    // console.log('Rendering chart with spec:', chartSpec);
+    // console.log('Chart spec type:', typeof chartSpec);
+    // console.log('Chart spec keys:', Object.keys(chartSpec || {}));
     
     if (!chartSpec) {
-      console.log('Chart spec is null/undefined');
+      // console.log('Chart spec is null/undefined');
       return null;
     }
     
     if (!chartSpec.data) {
-      console.log('Chart spec missing data:', chartSpec);
+      // console.log('Chart spec missing data:', chartSpec);
       return null;
     }
     
@@ -1197,19 +1197,19 @@
     if (!isNivoFormat) {
       // Only check keys and indexBy for non-Nivo format
       if (!chartSpec.keys) {
-        console.log('Chart spec missing keys (non-Nivo format):', chartSpec);
+        // console.log('Chart spec missing keys (non-Nivo format):', chartSpec);
         return null;
       }
       
       if (!chartSpec.indexBy) {
-        console.log('Chart spec missing indexBy (non-Nivo format):', chartSpec);
+        // console.log('Chart spec missing indexBy (non-Nivo format):', chartSpec);
         return null;
       }
     } else {
-      console.log('Detected Nivo format, skipping keys/indexBy validation');
+      // console.log('Detected Nivo format, skipping keys/indexBy validation');
     }
     
-    console.log('Chart spec validation passed');
+    // console.log('Chart spec validation passed');
 
     const chartId = 'chart-' + Date.now() + Math.random().toString(36).substr(2, 9);
     
@@ -1246,15 +1246,15 @@
       // Nivo format - data has 'value' property
       keys = ['value'];
       indexBy = 'id';
-      console.log('Detected Nivo format, using keys:', keys, 'indexBy:', indexBy);
+      // console.log('Detected Nivo format, using keys:', keys, 'indexBy:', indexBy);
     } else {
       // Original format
       keys = chartSpec.keys;
       indexBy = chartSpec.indexBy;
-      console.log('Using original format, keys:', keys, 'indexBy:', indexBy);
+      // console.log('Using original format, keys:', keys, 'indexBy:', indexBy);
     }
     
-    console.log('Chart type:', type, 'Data:', data, 'Keys:', keys, 'IndexBy:', indexBy);
+    // console.log('Chart type:', type, 'Data:', data, 'Keys:', keys, 'IndexBy:', indexBy);
     
     switch (type) {
       case 'bar':
@@ -1270,22 +1270,22 @@
         chartHTML = renderBarChart(data, keys, indexBy);
     }
     
-    console.log('Generated chart HTML:', chartHTML);
+    // console.log('Generated chart HTML:', chartHTML);
     chartContainer.innerHTML = chartHTML;
     return chartContainer;
   };
 
   const renderBarChart = (data, keys, indexBy) => {
-    console.log('Rendering bar chart with:', { data, keys, indexBy });
+    // console.log('Rendering bar chart with:', { data, keys, indexBy });
     
     if (!data || data.length === 0) {
-      console.log('No data for bar chart');
+      // console.log('No data for bar chart');
       return '<div style="padding: 20px; text-align: center;">No data available</div>';
     }
     
     try {
       const maxValue = Math.max(...data.map(d => Math.max(...keys.map(key => d[key] || 0))));
-      console.log('Max value:', maxValue);
+      // console.log('Max value:', maxValue);
       
       if (maxValue <= 0) {
         return '<div style="padding: 20px; text-align: center;">No valid data</div>';
@@ -1312,7 +1312,7 @@
       });
       
       svg += '</svg>';
-      console.log('Generated SVG:', svg);
+      // console.log('Generated SVG:', svg);
       return svg;
     } catch (error) {
       console.error('Error rendering bar chart:', error);
@@ -1345,10 +1345,10 @@
   };
 
   const renderPieChart = (data, keys, indexBy) => {
-    console.log('Rendering pie chart with:', { data, keys, indexBy });
+    // console.log('Rendering pie chart with:', { data, keys, indexBy });
     
     if (!data || data.length === 0) {
-      console.log('No data for pie chart');
+      // console.log('No data for pie chart');
       return '<div style="padding: 20px; text-align: center;">No data available</div>';
     }
     
@@ -1368,7 +1368,7 @@
       if (isNivoFormat) {
         // Nivo format: data has 'value' property
         total = data.reduce((sum, item) => sum + (item.value || 0), 0);
-        console.log('Using Nivo format, total:', total);
+        // console.log('Using Nivo format, total:', total);
         
         data.forEach((item, index) => {
           const value = item.value || 0;
@@ -1398,7 +1398,7 @@
       } else {
         // Original format: data has keys property
         total = data.reduce((sum, item) => sum + (item[keys[0]] || 0), 0);
-        console.log('Using original format, total:', total);
+        // console.log('Using original format, total:', total);
         
         data.forEach((item, index) => {
           const value = item[keys[0]] || 0;
@@ -1419,7 +1419,7 @@
       }
       
       svg += '</svg>';
-      console.log('Generated pie chart SVG');
+      // console.log('Generated pie chart SVG');
       return svg;
     } catch (error) {
       console.error('Error rendering pie chart:', error);
@@ -1461,14 +1461,14 @@
       
       // Add chart if available (only for BOT messages) - AFTER content
       if (message.chart_spec) {
-        console.log('Adding chart to message:', message.chart_spec);
+        // console.log('Adding chart to message:', message.chart_spec);
         const chartElement = renderChart(message.chart_spec);
-        console.log('Chart element created:', chartElement);
+        // console.log('Chart element created:', chartElement);
         if (chartElement) {
           contentContainer.appendChild(chartElement);
-          console.log('Chart element added to container');
+          // console.log('Chart element added to container');
         } else {
-          console.log('Failed to create chart element');
+          // console.log('Failed to create chart element');
         }
       }
       
@@ -1582,8 +1582,8 @@
       const response = await api.sendMessage(input, conversationId);
       
       if (response) {
-        console.log('API Response:', response);
-        console.log('Chart spec from API:', response.chart_spec);
+        // console.log('API Response:', response);
+        // console.log('Chart spec from API:', response.chart_spec);
         
         const aiMessage = {
           id: Date.now() + 1,
@@ -1598,7 +1598,7 @@
           updated_at: new Date().toISOString()
         };
         
-        console.log('Created AI message:', aiMessage);
+        // console.log('Created AI message:', aiMessage);
         messages.push(aiMessage);
         addMessage(aiMessage);
       } else {
@@ -1710,7 +1710,7 @@
     if (config.userId) {
       try {
         chatHistory = await api.fetchChatHistory();
-        console.log('Chat history loaded:', chatHistory.length, 'conversations');
+        // console.log('Chat history loaded:', chatHistory.length, 'conversations');
       } catch (error) {
         console.error('Error loading chat history:', error);
         chatHistory = [];
@@ -1758,7 +1758,7 @@
       if (userId) {
         config.userId = userId;
         localStorage.setItem('chatbot_user_id', userId);
-        console.log('User ID set via API:', userId);
+        // console.log('User ID set via API:', userId);
       }
     },
     // Get current userId
@@ -1770,7 +1770,7 @@
       Object.keys(newConfig).forEach(key => {
         if (config.hasOwnProperty(key)) {
           config[key] = newConfig[key];
-          console.log(`Config updated: ${key} = ${newConfig[key]}`);
+          // console.log(`Config updated: ${key} = ${newConfig[key]}`);
         }
       });
       
