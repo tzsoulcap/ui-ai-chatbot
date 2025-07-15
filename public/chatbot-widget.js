@@ -1,6 +1,6 @@
 /**
  * Advanced Chatbot Widget Embed Script
- * Version: 2.0.0 (Updated for dynamic userId support)
+ * Version: 2.0.1 (Production ready - console.log removed)
  * 
  * HOW TO USE:
  * 1. Add this script to your website:
@@ -599,11 +599,19 @@
     
     /* Chart styles */
     .chatbot-widget-chart-container {
-      margin: 12px 0;
+      margin: 16px 0;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: 12px;
       background: white;
       overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .chatbot-widget-chart-container:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      transform: translateY(-2px);
     }
     
     .chatbot-widget-chart-container svg {
@@ -614,10 +622,50 @@
       max-height: 100%;
     }
     
+    /* Chart animations */
+    .chatbot-widget-chart-container svg rect,
+    .chatbot-widget-chart-container svg path,
+    .chatbot-widget-chart-container svg circle {
+      transition: all 0.3s ease;
+    }
+    
+    /* Chart tooltips */
+    .chatbot-widget-chart-container .bar-group:hover rect,
+    .chatbot-widget-chart-container .line-series:hover path,
+    .chatbot-widget-chart-container .pie-slice:hover path {
+      filter: brightness(1.1) !important;
+    }
+    
+    /* Legend styles */
+    .chatbot-widget-chart-container .legend-item {
+      transition: opacity 0.3s ease;
+    }
+    
+    .chatbot-widget-chart-container .legend-item:hover {
+      opacity: 0.8;
+    }
+    
     @media (max-width: 768px) {
       .chatbot-widget-chart-container {
-        max-width: 280px;
-        height: 200px;
+        max-width: 380px;
+        height: 280px;
+        margin: 12px 0;
+      }
+      
+      .chatbot-widget-chart-container svg {
+        font-size: 10px;
+      }
+      
+      .chatbot-widget-chart-container .legend {
+        font-size: 9px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .chatbot-widget-chart-container {
+        max-width: 320px;
+        height: 240px;
+        margin: 8px 0;
       }
     }
     
@@ -1219,18 +1267,20 @@
     chartContainer.id = chartId;
     chartContainer.style.cssText = `
       width: 100%;
-      max-width: 350px;
-      height: 250px;
-      margin: 12px 0;
+      max-width: 450px;
+      height: 280px;
+      margin: 16px 0;
       border: 1px solid #e2e8f0;
-      border-radius: 8px;
+      border-radius: 12px;
       background: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 11px;
       color: #64748b;
       overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s ease;
     `;
     
     // Simple chart visualization based on type
@@ -1276,89 +1326,344 @@
   };
 
   const renderBarChart = (data, keys, indexBy) => {
-    // console.log('Rendering bar chart with:', { data, keys, indexBy });
-    
     if (!data || data.length === 0) {
-      // console.log('No data for bar chart');
-      return '<div style="padding: 20px; text-align: center;">No data available</div>';
+      return '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">No data available</div>';
     }
     
     try {
       const maxValue = Math.max(...data.map(d => Math.max(...keys.map(key => d[key] || 0))));
-      // console.log('Max value:', maxValue);
       
       if (maxValue <= 0) {
-        return '<div style="padding: 20px; text-align: center;">No valid data</div>';
+        return '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">No valid data</div>';
       }
       
-      const chartHeight = 150;
-      const barWidth = 25;
-      const barSpacing = 8;
-      const totalWidth = data.length * (barWidth + barSpacing);
+      const chartHeight = 200;
+      const chartWidth = Math.max(350, data.length * 60);
+      const padding = { top: 30, right: 20, bottom: 50, left: 60 };
+      const barWidth = 30;
+      const barSpacing = 10;
+      const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
       
-      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${totalWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet">`;
+      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="barGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="barGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="barGradient3" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="barGradient4" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+          </linearGradient>
+          <linearGradient id="barGradient5" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+          </linearGradient>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#00000020"/>
+          </filter>
+        </defs>
+        
+        <!-- Grid lines -->
+        <g class="grid">
+          ${Array.from({length: 5}, (_, i) => {
+            const y = padding.top + (i * (chartHeight - padding.top - padding.bottom) / 4);
+            return `<line x1="${padding.left}" y1="${y}" x2="${chartWidth - padding.right}" y2="${y}" stroke="#e2e8f0" stroke-width="1" opacity="0.5"/>`;
+          }).join('')}
+        </g>
+        
+        <!-- Y-axis labels -->
+        <g class="y-axis">
+          ${Array.from({length: 5}, (_, i) => {
+            const y = padding.top + (i * (chartHeight - padding.top - padding.bottom) / 4);
+            const value = Math.round(maxValue * (1 - i / 4));
+            return `<text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" font-size="10" fill="#64748b">${value}</text>`;
+          }).join('')}
+        </g>
+        
+        <!-- Bars -->
+        <g class="bars">`;
       
       data.forEach((item, index) => {
-        const x = index * (barWidth + barSpacing);
+        const x = padding.left + index * (barWidth + barSpacing);
         keys.forEach((key, keyIndex) => {
           const value = item[key] || 0;
-          const height = (value / maxValue) * (chartHeight - 40);
-          const y = chartHeight - height - 20;
-          const color = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][keyIndex % 5];
+          const height = (value / maxValue) * (chartHeight - padding.top - padding.bottom);
+          const y = chartHeight - padding.bottom - height;
+          const gradientId = `barGradient${(keyIndex % 5) + 1}`;
           
-          svg += `<rect x="${x + keyIndex * 8}" y="${y}" width="${barWidth - 8}" height="${height}" fill="${color}" rx="2"/>`;
-          svg += `<text x="${x + barWidth/2}" y="${chartHeight - 5}" text-anchor="middle" font-size="10" fill="#64748b">${item[indexBy]}</text>`;
+          svg += `
+            <g class="bar-group" data-index="${index}" data-key="${key}" data-value="${value}">
+              <rect 
+                x="${x + keyIndex * 5}" 
+                y="${y}" 
+                width="${barWidth - 8}" 
+                height="${height}" 
+                fill="url(#${gradientId})" 
+                rx="4" 
+                ry="4"
+                filter="url(#shadow)"
+                style="transition: all 0.3s ease; cursor: pointer;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.filter='url(#shadow) drop-shadow(0 4px 8px rgba(0,0,0,0.3))'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.filter='url(#shadow)'"
+              />
+              <text 
+                x="${x + (barWidth - 8) / 2 + keyIndex * 5}" 
+                y="${y - 5}" 
+                text-anchor="middle" 
+                font-size="10" 
+                fill="#374151" 
+                font-weight="600"
+                opacity="0"
+                style="transition: opacity 0.3s ease;"
+                onmouseover="this.style.opacity='1'"
+                onmouseout="this.style.opacity='0'"
+              >${value}</text>
+            </g>`;
         });
+        
+        // X-axis labels
+        svg += `<text 
+          x="${x + (barWidth + barSpacing) / 2}" 
+          y="${chartHeight - padding.bottom + 15}" 
+          text-anchor="middle" 
+          font-size="10" 
+          fill="#64748b"
+          transform="rotate(-45 ${x + (barWidth + barSpacing) / 2} ${chartHeight - padding.bottom + 15})"
+        >${item[indexBy]}</text>`;
       });
       
-      svg += '</svg>';
-      // console.log('Generated SVG:', svg);
+      svg += `
+        </g>
+        
+        <!-- Legend -->
+        <g class="legend" transform="translate(${chartWidth - 100}, 10)">
+          ${keys.map((key, index) => {
+            const color = colors[index % colors.length];
+            return `
+              <g class="legend-item">
+                <rect x="0" y="${index * 20}" width="12" height="12" fill="${color}" rx="2"/>
+                <text x="18" y="${index * 20 + 9}" font-size="10" fill="#374151">${key}</text>
+              </g>`;
+          }).join('')}
+        </g>
+      </svg>`;
+      
       return svg;
     } catch (error) {
       console.error('Error rendering bar chart:', error);
-      return '<div style="padding: 20px; text-align: center; color: red;">Error rendering chart</div>';
+      return '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 12px;">Error rendering chart</div>';
     }
   };
 
   const renderLineChart = (data, keys, indexBy) => {
-    if (!data || data.length === 0) return '<div>No data available</div>';
+    if (!data || data.length === 0) {
+      return '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">No data available</div>';
+    }
     
-          const chartHeight = 150;
-      const chartWidth = 300;
-      const padding = 30;
+    try {
+      const chartHeight = 200;
+      const chartWidth = Math.max(350, data.length * 60);
+      const padding = { top: 30, right: 80, bottom: 50, left: 60 };
+      const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
       
-      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet">`;
-    
-    keys.forEach((key, keyIndex) => {
-      const color = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][keyIndex % 5];
-      const points = data.map((item, index) => {
-        const x = padding + (index / (data.length - 1)) * (chartWidth - 2 * padding);
-        const y = chartHeight - padding - (item[key] || 0) / Math.max(...data.map(d => d[key] || 0)) * (chartHeight - 2 * padding);
-        return `${x},${y}`;
-      }).join(' ');
+      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartWidth} ${chartHeight}" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="lineGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:0.8" />
+          </linearGradient>
+          <linearGradient id="lineGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#ef4444;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#dc2626;stop-opacity:0.8" />
+          </linearGradient>
+          <linearGradient id="lineGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#059669;stop-opacity:0.8" />
+          </linearGradient>
+          <linearGradient id="lineGradient4" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#d97706;stop-opacity:0.8" />
+          </linearGradient>
+          <linearGradient id="lineGradient5" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.8" />
+            <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0.8" />
+          </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <!-- Grid lines -->
+        <g class="grid">
+          ${Array.from({length: 5}, (_, i) => {
+            const y = padding.top + (i * (chartHeight - padding.top - padding.bottom) / 4);
+            return `<line x1="${padding.left}" y1="${y}" x2="${chartWidth - padding.right}" y2="${y}" stroke="#e2e8f0" stroke-width="1" opacity="0.5"/>`;
+          }).join('')}
+        </g>
+        
+        <!-- Y-axis labels -->
+        <g class="y-axis">
+          ${Array.from({length: 5}, (_, i) => {
+            const y = padding.top + (i * (chartHeight - padding.top - padding.bottom) / 4);
+            const maxValue = Math.max(...data.map(d => Math.max(...keys.map(key => d[key] || 0))));
+            const value = Math.round(maxValue * (1 - i / 4));
+            return `<text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" font-size="10" fill="#64748b">${value}</text>`;
+          }).join('')}
+        </g>`;
       
-      svg += `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2"/>`;
-    });
-    
-    svg += '</svg>';
-    return svg;
+      keys.forEach((key, keyIndex) => {
+        const color = colors[keyIndex % colors.length];
+        const gradientId = `lineGradient${(keyIndex % 5) + 1}`;
+        const maxValue = Math.max(...data.map(d => d[key] || 0));
+        
+        // Create path for line
+        const points = data.map((item, index) => {
+          const x = padding.left + (index / (data.length - 1)) * (chartWidth - padding.left - padding.right);
+          const y = chartHeight - padding.bottom - ((item[key] || 0) / maxValue) * (chartHeight - padding.top - padding.bottom);
+          return `${x},${y}`;
+        });
+        
+        const pathData = `M ${points.join(' L ')}`;
+        
+        // Create area path for fill
+        const areaPoints = [
+          `${padding.left},${chartHeight - padding.bottom}`,
+          ...points,
+          `${chartWidth - padding.right},${chartHeight - padding.bottom}`
+        ];
+        const areaPathData = `M ${areaPoints.join(' L ')} Z`;
+        
+        svg += `
+          <g class="line-series" data-key="${key}">
+            <!-- Area fill -->
+            <path 
+              d="${areaPathData}" 
+              fill="url(#${gradientId})" 
+              opacity="0.1"
+              style="transition: opacity 0.3s ease;"
+              onmouseover="this.style.opacity='0.2'"
+              onmouseout="this.style.opacity='0.1'"
+            />
+            
+            <!-- Line -->
+            <path 
+              d="${pathData}" 
+              fill="none" 
+              stroke="url(#${gradientId})" 
+              stroke-width="3" 
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              filter="url(#glow)"
+              style="transition: all 0.3s ease; cursor: pointer;"
+              onmouseover="this.style.strokeWidth='4'; this.style.filter='url(#glow) brightness(1.2)'"
+              onmouseout="this.style.strokeWidth='3'; this.style.filter='url(#glow)'"
+            />
+            
+            <!-- Data points -->
+            ${data.map((item, index) => {
+              const x = padding.left + (index / (data.length - 1)) * (chartWidth - padding.left - padding.right);
+              const y = chartHeight - padding.bottom - ((item[key] || 0) / maxValue) * (chartHeight - padding.top - padding.bottom);
+              const value = item[key] || 0;
+              
+              return `
+                <circle 
+                  cx="${x}" 
+                  cy="${y}" 
+                  r="4" 
+                  fill="${color}" 
+                  stroke="white" 
+                  stroke-width="2"
+                  style="transition: all 0.3s ease; cursor: pointer;"
+                  onmouseover="this.style.r='6'; this.style.strokeWidth='3'"
+                  onmouseout="this.style.r='4'; this.style.strokeWidth='2'"
+                />
+                <text 
+                  x="${x}" 
+                  y="${y - 10}" 
+                  text-anchor="middle" 
+                  font-size="10" 
+                  fill="#374151" 
+                  font-weight="600"
+                  opacity="0"
+                  style="transition: opacity 0.3s ease;"
+                  onmouseover="this.style.opacity='1'"
+                  onmouseout="this.style.opacity='0'"
+                >${value}</text>`;
+            }).join('')}
+          </g>`;
+      });
+      
+      // X-axis labels
+      data.forEach((item, index) => {
+        const x = padding.left + (index / (data.length - 1)) * (chartWidth - padding.left - padding.right);
+        svg += `<text 
+          x="${x}" 
+          y="${chartHeight - padding.bottom + 15}" 
+          text-anchor="middle" 
+          font-size="10" 
+          fill="#64748b"
+          transform="rotate(-45 ${x} ${chartHeight - padding.bottom + 15})"
+        >${item[indexBy]}</text>`;
+      });
+      
+      svg += `
+        <!-- Legend -->
+        <g class="legend" transform="translate(${chartWidth - 70}, 10)">
+          ${keys.map((key, index) => {
+            const color = colors[index % colors.length];
+            return `
+              <g class="legend-item">
+                <line x1="0" y1="${index * 20 + 6}" x2="15" y2="${index * 20 + 6}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>
+                <text x="20" y="${index * 20 + 9}" font-size="10" fill="#374151">${key}</text>
+              </g>`;
+          }).join('')}
+        </g>
+      </svg>`;
+      
+      return svg;
+    } catch (error) {
+      console.error('Error rendering line chart:', error);
+      return '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 12px;">Error rendering chart</div>';
+    }
   };
 
   const renderPieChart = (data, keys, indexBy) => {
-    // console.log('Rendering pie chart with:', { data, keys, indexBy });
-    
     if (!data || data.length === 0) {
-      // console.log('No data for pie chart');
-      return '<div style="padding: 20px; text-align: center;">No data available</div>';
+      return '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 12px;">No data available</div>';
     }
     
-          try {
-        const chartSize = 180;
-        const radius = chartSize / 2 - 25;
-        const centerX = chartSize / 2;
-        const centerY = chartSize / 2;
-        
-        let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartSize} ${chartSize}" preserveAspectRatio="xMidYMid meet">`;
+    try {
+      const chartSize = 170;
+      const radius = chartSize / 2 - 32;
+      const centerX = chartSize / 2;
+      const centerY = chartSize / 2;
+      const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+      
+      let svg = `<svg width="100%" height="100%" viewBox="0 0 ${chartSize + 120} ${chartSize}" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="pieShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#00000030"/>
+          </filter>
+          <filter id="pieGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>`;
       
       // Check if data is in Nivo format (has 'value' property)
       const isNivoFormat = data[0] && data[0].hasOwnProperty('value');
@@ -1368,13 +1673,13 @@
       if (isNivoFormat) {
         // Nivo format: data has 'value' property
         total = data.reduce((sum, item) => sum + (item.value || 0), 0);
-        // console.log('Using Nivo format, total:', total);
         
         data.forEach((item, index) => {
           const value = item.value || 0;
           const angle = (value / total) * 2 * Math.PI;
-          const color = item.color || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][index % 5];
+          const color = item.color || colors[index % colors.length];
           const label = item.label || item.id || `Item ${index}`;
+          const percentage = ((value / total) * 100).toFixed(1);
           
           const x1 = centerX + radius * Math.cos(currentAngle);
           const y1 = centerY + radius * Math.sin(currentAngle);
@@ -1383,27 +1688,58 @@
           
           const largeArcFlag = angle > Math.PI ? 1 : 0;
           
-          svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" fill="${color}"/>`;
-          
-          // Add label (smaller and closer)
-          const labelAngle = currentAngle + angle / 2;
-          const labelRadius = radius + 15;
-          const labelX = centerX + labelRadius * Math.cos(labelAngle);
-          const labelY = centerY + labelRadius * Math.sin(labelAngle);
-          
-          svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" font-size="8" fill="#64748b">${label}</text>`;
+          svg += `
+            <g class="pie-slice" data-index="${index}" data-value="${value}" data-percentage="${percentage}">
+              <path 
+                d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                fill="${color}"
+                filter="url(#pieShadow)"
+                style="transition: all 0.3s ease; cursor: pointer;"
+                onmouseover="this.style.transform='scale(1.05)'; this.style.filter='url(#pieGlow)'"
+                onmouseout="this.style.transform='scale(1)'; this.style.filter='url(#pieShadow)'"
+              />
+              
+              <!-- Percentage label -->
+              <text 
+                x="${centerX + (radius * 0.7) * Math.cos(currentAngle + angle / 2)}" 
+                y="${centerY + (radius * 0.7) * Math.sin(currentAngle + angle / 2)}" 
+                text-anchor="middle" 
+                font-size="12" 
+                fill="white" 
+                font-weight="600"
+                style="pointer-events: none;"
+              >${percentage}%</text>
+            </g>`;
           
           currentAngle += angle;
         });
+        
+        // Add legend on the right side
+        svg += `<g class="legend" transform="translate(${chartSize + 15}, 10)">`;
+        data.forEach((item, index) => {
+          const color = item.color || colors[index % colors.length];
+          const label = item.label || item.id || `Item ${index}`;
+          const value = item.value || 0;
+          
+          svg += `
+            <g class="legend-item" transform="translate(0, ${index * 18})">
+              <rect x="0" y="0" width="11" height="11" fill="${color}" rx="2" ry="2"/>
+              <text x="16" y="9" font-size="9" fill="#374151">${label}</text>
+              <text x="16" y="17" font-size="8" fill="#64748b">${value} (${((value / total) * 100).toFixed(1)}%)</text>
+            </g>`;
+        });
+        svg += `</g>`;
+        
       } else {
         // Original format: data has keys property
         total = data.reduce((sum, item) => sum + (item[keys[0]] || 0), 0);
-        // console.log('Using original format, total:', total);
         
         data.forEach((item, index) => {
           const value = item[keys[0]] || 0;
           const angle = (value / total) * 2 * Math.PI;
-          const color = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][index % 5];
+          const color = colors[index % colors.length];
+          const label = item[indexBy] || `Item ${index}`;
+          const percentage = ((value / total) * 100).toFixed(1);
           
           const x1 = centerX + radius * Math.cos(currentAngle);
           const y1 = centerY + radius * Math.sin(currentAngle);
@@ -1412,18 +1748,54 @@
           
           const largeArcFlag = angle > Math.PI ? 1 : 0;
           
-          svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" fill="${color}"/>`;
+          svg += `
+            <g class="pie-slice" data-index="${index}" data-value="${value}" data-percentage="${percentage}">
+              <path 
+                d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                fill="${color}"
+                filter="url(#pieShadow)"
+                style="transition: all 0.3s ease; cursor: pointer;"
+                onmouseover="this.style.transform='scale(1.05)'; this.style.filter='url(#pieGlow)'"
+                onmouseout="this.style.transform='scale(1)'; this.style.filter='url(#pieShadow)'"
+              />
+              
+              <!-- Percentage label -->
+              <text 
+                x="${centerX + (radius * 0.7) * Math.cos(currentAngle + angle / 2)}" 
+                y="${centerY + (radius * 0.7) * Math.sin(currentAngle + angle / 2)}" 
+                text-anchor="middle" 
+                font-size="12" 
+                fill="white" 
+                font-weight="600"
+                style="pointer-events: none;"
+              >${percentage}%</text>
+            </g>`;
           
           currentAngle += angle;
         });
+        
+        // Add legend on the right side
+        svg += `<g class="legend" transform="translate(${chartSize + 15}, 10)">`;
+        data.forEach((item, index) => {
+          const color = colors[index % colors.length];
+          const label = item[indexBy] || `Item ${index}`;
+          const value = item[keys[0]] || 0;
+          
+          svg += `
+            <g class="legend-item" transform="translate(0, ${index * 18})">
+              <rect x="0" y="0" width="11" height="11" fill="${color}" rx="2" ry="2"/>
+              <text x="16" y="9" font-size="9" fill="#374151">${label}</text>
+              <text x="16" y="17" font-size="8" fill="#64748b">${value} (${((value / total) * 100).toFixed(1)}%)</text>
+            </g>`;
+        });
+        svg += `</g>`;
       }
       
       svg += '</svg>';
-      // console.log('Generated pie chart SVG');
       return svg;
     } catch (error) {
       console.error('Error rendering pie chart:', error);
-      return '<div style="padding: 20px; text-align: center; color: red;">Error rendering pie chart</div>';
+      return '<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 12px;">Error rendering pie chart</div>';
     }
   };
 
