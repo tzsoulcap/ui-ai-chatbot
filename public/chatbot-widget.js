@@ -17,7 +17,8 @@
  *    data-widget-width: Width of chat window (default: 400px)
  *    data-widget-height: Height of chat window (default: 600px)
  *    data-hide-on-mobile: Hide on mobile devices (default: false)
- *    data-notion-rag: Enable Notion RAG by default (default: false)
+ *    data-notion-rag: Enable Notion RAG by default (default: false) - DEPRECATED, use data-chat-mode instead
+ *    data-chat-mode: Set default chat mode (default: database, options: manual, database, document)
  * 
  * MULTIPLE WAYS TO SET USER ID (in order of priority and security):
  * 1. data-user-id attribute (highest priority, secure for server-side rendering)
@@ -78,6 +79,15 @@
  *   buttonColor: '#ff0000',
  *   position: 'left'
  * });
+ * 
+ * CHAT MODE API:
+ * window.ChatbotWidget.setChatMode('manual'); // 'manual', 'database', 'document'
+ * window.ChatbotWidget.getChatMode(); // Returns current chat mode
+ * 
+ * DOCUMENT MODE:
+ * - Requires PDF file upload before sending message
+ * - Sends data to: /webhook-test/ask-docs
+ * - Data includes: chatInput, user_id, conversation_id, file, file_type
  */
 
 (function() {
@@ -104,6 +114,7 @@
     widgetHeight: scriptElement.getAttribute('data-widget-height') || '600px',
     hideOnMobile: scriptElement.getAttribute('data-hide-on-mobile') === 'true',
     notionRag: scriptElement.getAttribute('data-notion-rag') === 'true',
+    defaultChatMode: scriptElement.getAttribute('data-chat-mode') || 'document',
     buttonIcon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`,
@@ -217,7 +228,7 @@
   let chatHistory = [];
   let activeChat = null;
   let isLoading = false;
-  let isNotionRagActive = config.notionRag;
+  let chatMode = config.defaultChatMode; // 'manual', 'database', 'document'
   let inputValue = '';
   let isHistoryView = false;
 
@@ -355,8 +366,73 @@
 
     async sendMessage(chatInput, conversationId) {
       try {
-        const endpoint = isNotionRagActive ? 'ask-notion' : 'ask';
-        const response = await fetch(`${config.apiUrl}/mock/${endpoint}`, {
+        let endpoint = 'ask-view';
+        let requestBody = { 
+          chatInput, 
+          user_id: config.userId, 
+          conversation_id: conversationId 
+        };
+
+        if (chatMode === 'manual') {
+          endpoint = 'ask-notion';
+        } else if (chatMode === 'database') {
+          endpoint = 'ask-view';
+        } else if (chatMode === 'document') {
+          endpoint = 'ask-docs';
+          
+          // Get uploaded file
+          const uploadedFile = fileInput.files[0];
+          if (uploadedFile) {
+            // console.log('Uploading file:', uploadedFile.name, 'Size:', uploadedFile.size);
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('chatInput', chatInput);
+            formData.append('user_id', config.userId);
+            formData.append('conversation_id', conversationId);
+            formData.append('file', uploadedFile);
+            formData.append('file_type', 'pdf');
+            
+            // console.log('Sending to endpoint:', `http://192.168.50.119:5678/webhook/${endpoint}`);
+            
+            let response;
+            try {
+              // Try the direct endpoint first
+              response = await fetch(`http://192.168.50.119:5678/webhook/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json'
+                },
+                mode: 'cors',
+                body: formData
+              });
+            } catch (error) {
+              console.warn('Direct endpoint failed, trying with config.apiUrl:', error);
+              // Fallback to using config.apiUrl
+              response = await fetch(`${config.apiUrl}/webhook/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json'
+                },
+                mode: 'cors',
+                body: formData
+              });
+            }
+            
+            if (!response.ok) throw new Error('Failed to get response from AI');
+            return await response.json();
+          } else {
+            // No file uploaded, send error message
+            return {
+              message_text: 'กรุณาอัพโหลดไฟล์ PDF ก่อนส่งคำถาม',
+              notes: null,
+              chart_spec: null,
+              chart_notes: null
+            };
+          }
+        }
+        
+        // For manual and database modes, use JSON request
+        const response = await fetch(`http://192.168.50.119:5678/webhook/${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -364,11 +440,7 @@
             'Access-Control-Allow-Origin': '*'
           },
           mode: 'cors',
-          body: JSON.stringify({ 
-            chatInput, 
-            user_id: config.userId, 
-            conversation_id: conversationId 
-          }),
+          body: JSON.stringify(requestBody),
         });
         if (!response.ok) throw new Error('Failed to get response from AI');
         return await response.json();
@@ -782,29 +854,143 @@
       40% { transform: scale(1); }
     }
     
-    .chatbot-widget-toggle {
-      margin-top: 8px;
+    /* Typing indicator styles */
+    .chatbot-widget-typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       padding: 8px 12px;
       background: #f1f5f9;
+      border-radius: 18px;
+      width: fit-content;
+      max-width: 60px;
+    }
+    
+    .chatbot-widget-typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+      animation: chatbot-typing 1.4s infinite ease-in-out;
+    }
+    
+    .chatbot-widget-typing-dot:nth-child(1) { 
+      animation-delay: -0.32s; 
+    }
+    
+    .chatbot-widget-typing-dot:nth-child(2) { 
+      animation-delay: -0.16s; 
+    }
+    
+    .chatbot-widget-typing-dot:nth-child(3) { 
+      animation-delay: 0s; 
+    }
+    
+    @keyframes chatbot-typing {
+      0%, 60%, 100% { 
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+      30% { 
+        transform: translateY(-10px);
+        opacity: 1;
+      }
+    }
+    
+    .chatbot-widget-controls-row {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .chatbot-widget-mode-selector {
+      position: relative;
+      display: inline-block;
+      width: auto;
+      min-width: 140px;
+    }
+    
+    .chatbot-widget-mode-select {
+      width: auto;
+      min-width: 140px;
+      padding: 6px 10px;
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 6px center;
+      background-size: 14px;
+      padding-right: 28px;
+      color: #374151;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .chatbot-widget-mode-select:hover {
+      background-color: #f9fafb;
+      border-color: #9ca3af;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chatbot-widget-mode-select:focus {
+      outline: none;
+      border-color: ${config.buttonColor};
+      box-shadow: 0 0 0 3px ${config.buttonColor}15;
+      background-color: #ffffff;
+    }
+    
+    .chatbot-widget-upload-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
       transition: all 0.2s ease;
     }
     
-    .chatbot-widget-toggle.active {
-      background: #10b981;
+    .chatbot-widget-upload-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: ${config.buttonColor};
       color: white;
-      border-color: #10b981;
+      border: none;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
     }
     
-    .chatbot-widget-toggle:hover {
-      background: #e2e8f0;
+    .chatbot-widget-upload-btn:hover {
+      background: ${config.buttonColor}dd;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    .chatbot-widget-toggle.active:hover {
-      background: #059669;
+    .chatbot-widget-upload-btn:active {
+      transform: translateY(0);
+    }
+    
+    .chatbot-widget-file-name {
+      font-size: 10px;
+      color: #64748b;
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
     .chatbot-widget-welcome {
@@ -1002,9 +1188,27 @@
       ></textarea>
       <button class="chatbot-widget-send" disabled>${config.sendIcon}</button>
     </div>
-    <button class="chatbot-widget-toggle ${isNotionRagActive ? 'active' : ''}">
-      Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}
-    </button>
+          <div class="chatbot-widget-controls-row">
+        <div class="chatbot-widget-mode-selector">
+          <select class="chatbot-widget-mode-select">
+            <option value="manual" ${chatMode === 'manual' ? 'selected' : ''} disabled>สอบถามคู่มือ (ปิดใช้งาน)</option>
+            <option value="database" ${chatMode === 'database' ? 'selected' : ''} disabled>แชทกับฐานข้อมูล (ปิดใช้งาน)</option>
+            <option value="document" ${chatMode === 'document' ? 'selected' : ''}>แชทกับเอกสาร</option>
+          </select>
+        </div>
+      <div class="chatbot-widget-upload-container" style="display: none;">
+        <input type="file" id="chatbot-widget-file-input" accept=".pdf" style="display: none;">
+        <button class="chatbot-widget-upload-btn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          อัพโหลด PDF
+        </button>
+        <span class="chatbot-widget-file-name"></span>
+      </div>
+    </div>
   `;
   
   // Append elements
@@ -1020,7 +1224,11 @@
   const historyToggleButton = header.querySelector('.chatbot-widget-history-toggle');
   const textarea = inputContainer.querySelector('.chatbot-widget-textarea');
   const sendButton = inputContainer.querySelector('.chatbot-widget-send');
-  const toggleButton = inputContainer.querySelector('.chatbot-widget-toggle');
+  const modeSelect = inputContainer.querySelector('.chatbot-widget-mode-select');
+  const uploadContainer = inputContainer.querySelector('.chatbot-widget-upload-container');
+  const fileInput = inputContainer.querySelector('#chatbot-widget-file-input');
+  const uploadBtn = inputContainer.querySelector('.chatbot-widget-upload-btn');
+  const fileName = inputContainer.querySelector('.chatbot-widget-file-name');
   
   // Auto-resize textarea
   const resizeTextarea = () => {
@@ -1036,6 +1244,21 @@
   };
   
   textarea.addEventListener('input', updateSendButton);
+  
+  // Function to toggle upload container visibility
+  const toggleUploadContainer = () => {
+    if (chatMode === 'document') {
+      uploadContainer.style.display = 'flex';
+    } else {
+      uploadContainer.style.display = 'none';
+      // Clear file input when switching away from document mode
+      fileInput.value = '';
+      fileName.textContent = '';
+    }
+  };
+
+  // Initialize upload container visibility
+  toggleUploadContainer();
   
   // Show welcome screen
   const showWelcome = () => {
@@ -1862,15 +2085,24 @@
   // Show loading indicator
   const showLoading = () => {
     const loadingElement = document.createElement('div');
-    loadingElement.className = 'chatbot-widget-loading';
-    loadingElement.innerHTML = `
-      <span>AI is thinking</span>
-      <div class="chatbot-widget-loading-dots">
-        <div class="chatbot-widget-loading-dot"></div>
-        <div class="chatbot-widget-loading-dot"></div>
-        <div class="chatbot-widget-loading-dot"></div>
+    loadingElement.className = 'chatbot-widget-message bot';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'chatbot-widget-message-avatar bot';
+    avatar.textContent = 'AI';
+    
+    const content = document.createElement('div');
+    content.className = 'chatbot-widget-message-content bot';
+    content.innerHTML = `
+      <div class="chatbot-widget-typing-indicator">
+        <div class="chatbot-widget-typing-dot"></div>
+        <div class="chatbot-widget-typing-dot"></div>
+        <div class="chatbot-widget-typing-dot"></div>
       </div>
     `;
+    
+    loadingElement.appendChild(avatar);
+    loadingElement.appendChild(content);
     messagesContainer.appendChild(loadingElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
     return loadingElement;
@@ -2043,10 +2275,29 @@
     }
   });
   
-  toggleButton.addEventListener('click', () => {
-    isNotionRagActive = !isNotionRagActive;
-    toggleButton.textContent = `Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}`;
-    toggleButton.classList.toggle('active', isNotionRagActive);
+  modeSelect.addEventListener('change', () => {
+    chatMode = modeSelect.value;
+    toggleUploadContainer();
+  });
+
+  // File upload handlers
+  uploadBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type === 'application/pdf') {
+        fileName.textContent = file.name;
+        // You can add file upload logic here
+        // console.log('PDF file selected:', file.name);
+      } else {
+        alert('กรุณาเลือกไฟล์ PDF เท่านั้น');
+        fileInput.value = '';
+        fileName.textContent = '';
+      }
+    }
   });
   
   // History toggle event listener
@@ -2120,10 +2371,32 @@
       updateSendButton();
       sendMessage();
     },
-    setNotionRag: (enabled) => {
-      isNotionRagActive = enabled;
-      toggleButton.textContent = `Notion RAG ${isNotionRagActive ? 'ON' : 'OFF'}`;
-      toggleButton.classList.toggle('active', isNotionRagActive);
+    setChatMode: (mode) => {
+      chatMode = mode;
+      if (modeSelect) {
+        modeSelect.value = mode;
+      }
+    },
+    getChatMode: () => {
+      return chatMode;
+    },
+    // File upload methods
+    uploadFile: (file) => {
+      if (file && file.type === 'application/pdf') {
+        fileName.textContent = file.name;
+        console.log('PDF file uploaded:', file.name);
+        return true;
+      } else {
+        console.error('Invalid file type. Only PDF files are allowed.');
+        return false;
+      }
+    },
+    getUploadedFile: () => {
+      return fileInput.files[0] || null;
+    },
+    clearUploadedFile: () => {
+      fileInput.value = '';
+      fileName.textContent = '';
     },
     // Set userId dynamically
     setUserId: (userId) => {

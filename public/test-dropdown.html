@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chatbot Widget Dropdown</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Chatbot Widget Dropdown</h1>
+        
+        <div class="test-section">
+            <h3>Test Chat Mode API</h3>
+            <button onclick="setMode('manual')">Set to Manual (สอบถามคู่มือ)</button>
+            <button onclick="setMode('database')">Set to Database (แชทกับฐานข้อมูล)</button>
+            <button onclick="setMode('document')">Set to Document (แชทกับเอกสาร)</button>
+            <button onclick="getCurrentMode()">Get Current Mode</button>
+            <div id="status" class="status">Status will appear here...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Configuration</h3>
+            <button onclick="setConfig()">Set Config with Manual Mode</button>
+            <button onclick="getConfig()">Get Current Config</button>
+            <div id="config-status" class="status">Config status will appear here...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test File Upload</h3>
+            <p>Select "แชทกับเอกสาร" mode to see the upload button</p>
+            <button onclick="testFileUpload()">Test File Upload API</button>
+            <button onclick="getUploadedFile()">Get Uploaded File</button>
+            <button onclick="clearUploadedFile()">Clear Uploaded File</button>
+            <div id="file-status" class="status">File upload status will appear here...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Widget Information</h3>
+            <p>This page includes the chatbot widget with dropdown functionality.</p>
+            <p>The dropdown should show three options:</p>
+            <ul>
+                <li><strong>สอบถามคู่มือ</strong> (Manual) - Uses 'ask-notion' endpoint</li>
+                <li><strong>แชทกับฐานข้อมูล</strong> (Database) - Uses 'ask' endpoint</li>
+                <li><strong>แชทกับเอกสาร</strong> (Document) - Uses 'ask-docs' endpoint with file upload</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <script src="chatbot-widget.js" id="chatbot-widget" 
+            data-api-url="http://192.168.50.119:5678/webhook" 
+            data-user-id="test-user-123"
+            data-chat-mode="database">
+    </script>
+
+    <script>
+        function setMode(mode) {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setChatMode(mode);
+                document.getElementById('status').textContent = `Chat mode set to: ${mode}`;
+            } else {
+                document.getElementById('status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        function getCurrentMode() {
+            if (window.ChatbotWidget) {
+                const mode = window.ChatbotWidget.getChatMode();
+                document.getElementById('status').textContent = `Current chat mode: ${mode}`;
+            } else {
+                document.getElementById('status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        function setConfig() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setConfig({
+                    userId: 'test-user-456',
+                    buttonColor: '#ff6b6b',
+                    position: 'left',
+                    chatMode: 'manual'
+                });
+                document.getElementById('config-status').textContent = 'Config updated with manual mode';
+            } else {
+                document.getElementById('config-status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        function getConfig() {
+            if (window.ChatbotWidget) {
+                const config = window.ChatbotWidget.getConfig();
+                document.getElementById('config-status').textContent = `Config: ${JSON.stringify(config, null, 2)}`;
+            } else {
+                document.getElementById('config-status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        function testFileUpload() {
+            if (window.ChatbotWidget) {
+                // Create a mock file for testing
+                const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+                const result = window.ChatbotWidget.uploadFile(mockFile);
+                document.getElementById('file-status').textContent = `File upload test: ${result ? 'Success' : 'Failed'}`;
+            } else {
+                document.getElementById('file-status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        function getUploadedFile() {
+            if (window.ChatbotWidget) {
+                const file = window.ChatbotWidget.getUploadedFile();
+                document.getElementById('file-status').textContent = `Uploaded file: ${file ? file.name : 'None'}`;
+            } else {
+                document.getElementById('file-status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        function clearUploadedFile() {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.clearUploadedFile();
+                document.getElementById('file-status').textContent = 'Uploaded file cleared';
+            } else {
+                document.getElementById('file-status').textContent = 'ChatbotWidget not available yet';
+            }
+        }
+
+        // Wait for widget to load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (window.ChatbotWidget) {
+                    document.getElementById('status').textContent = 'Widget loaded successfully!';
+                } else {
+                    document.getElementById('status').textContent = 'Widget failed to load';
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

@@ -188,6 +188,21 @@ window.ChatbotWidget.setConfig({
         <button onclick="window.ChatbotWidget.toggle()">Toggle Widget</button>
     </div>
 
+    <div class="demo-section">
+        <h2>Chat Mode Dropdown Demo</h2>
+        <p>Test the new dropdown functionality with three chat modes:</p>
+        <ul>
+            <li><strong>สอบถามคู่มือ</strong> (Manual) - Uses 'ask-notion' endpoint</li>
+            <li><strong>แชทกับฐานข้อมูล</strong> (Database) - Uses 'ask' endpoint</li>
+            <li><strong>แชทกับเอกสาร</strong> (Document) - Uses 'ask-document' endpoint</li>
+        </ul>
+        <button onclick="setChatMode('manual')">Set to Manual</button>
+        <button onclick="setChatMode('database')">Set to Database</button>
+        <button onclick="setChatMode('document')">Set to Document</button>
+        <button onclick="getCurrentChatMode()">Get Current Mode</button>
+        <p><strong>Chat Mode Status:</strong> <span id="chat-mode-status">Not set</span></p>
+    </div>
+
     <script>
         // Update status displays
         function updateStatus() {
@@ -297,6 +312,25 @@ window.ChatbotWidget.setConfig({
             if (window.ChatbotWidget) {
                 const config = window.ChatbotWidget.getConfig();
                 document.getElementById('current-config').textContent = JSON.stringify(config, null, 2);
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        // Chat Mode API functions
+        function setChatMode(mode) {
+            if (window.ChatbotWidget) {
+                window.ChatbotWidget.setChatMode(mode);
+                document.getElementById('chat-mode-status').textContent = `Chat mode set to: ${mode}`;
+            } else {
+                alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
+            }
+        }
+
+        function getCurrentChatMode() {
+            if (window.ChatbotWidget) {
+                const mode = window.ChatbotWidget.getChatMode();
+                document.getElementById('chat-mode-status').textContent = `Current chat mode: ${mode}`;
             } else {
                 alert('ChatbotWidget not loaded yet. Wait a moment and try again.');
             }
