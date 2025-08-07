@@ -572,22 +572,28 @@
     .chatbot-widget-message {
       margin-bottom: 16px;
       display: flex;
-      gap: 8px;
+      gap: 12px;
+      align-items: flex-start;
     }
     
     .chatbot-widget-message.user {
       justify-content: flex-end;
     }
     
+    .chatbot-widget-message.bot {
+      justify-content: flex-start;
+    }
+    
     .chatbot-widget-message-avatar {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 14px;
       font-weight: 600;
+      flex-shrink: 0;
     }
     
     .chatbot-widget-message-avatar.bot {
@@ -606,6 +612,7 @@
       border-radius: 12px;
       font-size: 14px;
       line-height: 1.5;
+      margin-left: 4px;
     }
     
     .chatbot-widget-message-content.bot {
@@ -624,6 +631,33 @@
       flex-direction: column;
       gap: 8px;
       max-width: 70%;
+      margin-left: 4px;
+    }
+    
+    /* Special handling for messages with tables */
+    .chatbot-widget-message.bot .chatbot-widget-content-container.has-table,
+    .chatbot-widget-message.bot .chatbot-widget-message-content.has-table {
+      max-width: 90% !important;
+      min-width: 300px;
+      margin-left: 8px;
+    }
+    
+    /* Responsive table handling */
+    @media (max-width: 768px) {
+      .chatbot-widget-message.bot .chatbot-widget-content-container.has-table,
+      .chatbot-widget-message.bot .chatbot-widget-message-content.has-table {
+        max-width: 92% !important;
+        min-width: 250px;
+        margin-left: 4px;
+      }
+      
+      .chatbot-widget-table {
+        font-size: 10px;
+      }
+      
+      .chatbot-widget-table td {
+        padding: 4px 6px;
+      }
     }
     
     /* Markdown styles */
@@ -667,6 +701,84 @@
     
     .chatbot-widget-message-content a:hover {
       text-decoration: underline;
+    }
+    
+    /* Table styles */
+    .chatbot-widget-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 12px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chatbot-widget-table tr {
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .chatbot-widget-table tr:last-child {
+      border-bottom: none;
+    }
+    
+    .chatbot-widget-table td {
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-right: 1px solid #f1f5f9;
+    }
+    
+    .chatbot-widget-table td:last-child {
+      border-right: none;
+    }
+    
+    .chatbot-widget-table tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    
+    .chatbot-widget-table tr:first-child {
+      background-color: #f1f5f9;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    /* List styles */
+    .chatbot-widget-message-content ul,
+    .chatbot-widget-message-content ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    .chatbot-widget-message-content li {
+      margin: 4px 0;
+      line-height: 1.4;
+    }
+    
+    /* Header styles */
+    .chatbot-widget-message-content h1,
+    .chatbot-widget-message-content h2,
+    .chatbot-widget-message-content h3 {
+      margin: 16px 0 8px 0;
+      color: #1e293b;
+      font-weight: 600;
+    }
+    
+    .chatbot-widget-message-content h1 {
+      font-size: 18px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+    
+    .chatbot-widget-message-content h2 {
+      font-size: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 2px;
+    }
+    
+    .chatbot-widget-message-content h3 {
+      font-size: 14px;
     }
     
     /* Chart styles */
@@ -718,6 +830,24 @@
     }
     
     @media (max-width: 768px) {
+      .chatbot-widget-message {
+        gap: 8px;
+      }
+      
+      .chatbot-widget-message-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+      }
+      
+      .chatbot-widget-content-container {
+        margin-left: 2px;
+      }
+      
+      .chatbot-widget-message-content {
+        margin-left: 2px;
+      }
+      
       .chatbot-widget-chart-container {
         max-width: 380px;
         height: 280px;
@@ -1266,6 +1396,18 @@
     isHistoryView = false;
     historyToggleButton.classList.remove('active');
     
+    // Reset active chat to start a new conversation
+    activeChat = null;
+    messages.length = 0; // Clear current messages
+    
+    // Clear uploaded file
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    if (fileName) {
+      fileName.textContent = '';
+    }
+    
     messagesContainer.innerHTML = `
       <div class="chatbot-widget-welcome">
         <h3>Welcome to AI Assistant</h3>
@@ -1277,6 +1419,14 @@
         </div>
       </div>
     `;
+    
+    // Show notification that we're starting a new conversation
+    if (activeChat === null) {
+      // console.log('Starting new conversation');
+      // console.log('Previous conversation cleared');
+      // console.log('Uploaded file cleared');
+      showConversationStatus();
+    }
     
     // Add event listeners to suggestions
     const suggestions = messagesContainer.querySelectorAll('.chatbot-widget-suggestion');
@@ -1361,7 +1511,9 @@
     const newChatButton = messagesContainer.querySelector('.chatbot-widget-new-chat');
     newChatButton.addEventListener('click', (e) => {
       e.stopPropagation(); // Prevent widget from closing
+      // console.log('Starting new chat from history view');
       showWelcome();
+      showConversationStatus();
     });
   };
 
@@ -1379,6 +1531,14 @@
         messages.push(...response);
         activeChat = chatId;
         
+        // Clear uploaded file when loading history
+        if (fileInput) {
+          fileInput.value = '';
+        }
+        if (fileName) {
+          fileName.textContent = '';
+        }
+        
         // Clear and add all messages
         messagesContainer.innerHTML = '';
         messages.forEach(message => {
@@ -1390,6 +1550,9 @@
         historyToggleButton.classList.remove('active');
         
         // console.log('Chat history loaded:', chatId);
+        // console.log('Now viewing conversation:', chatId);
+        // console.log('Uploaded file cleared for history view');
+        showConversationStatus();
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
@@ -1433,13 +1596,22 @@
           if (activeChat === chatId) {
             activeChat = null;
             messages.length = 0;
+            
+            // Clear uploaded file when deleting active chat
+            if (fileInput) {
+              fileInput.value = '';
+            }
+            if (fileName) {
+              fileName.textContent = '';
+            }
+            
             showWelcome();
           } else {
             // Refresh history view
             showChatHistory();
           }
           
-          console.log('Chat deleted successfully:', chatId);
+          // console.log('Chat deleted successfully:', chatId);
         } else {
           console.error('Failed to delete chat:', response.status, response.statusText);
           alert('เกิดข้อผิดพลาดในการลบการสนทนา กรุณาลองใหม่อีกครั้ง');
@@ -1451,30 +1623,58 @@
     }
   };
   
-  // Simple markdown parser
+  // Enhanced markdown parser with table support
   const parseMarkdown = (text) => {
     if (!text) return '';
     
-    return text
-      // Bold: **text** or __text__
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.*?)__/g, '<strong>$1</strong>')
-      
-      // Italic: *text* or _text_
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-      
-      // Code: `code`
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-      
-      // Code blocks: ```code```
-      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-      
-      // Links: [text](url)
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      
-      // Line breaks
-      .replace(/\n/g, '<br>');
+    let result = text;
+    
+    // Headers: ### Header
+    result = result.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    result = result.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    result = result.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    
+    // Bold: **text** or __text__
+    result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Italic: *text* or _text_
+    result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    result = result.replace(/_(.*?)_/g, '<em>$1</em>');
+    
+    // Code: `code`
+    result = result.replace(/`(.*?)`/g, '<code>$1</code>');
+    
+    // Code blocks: ```code```
+    result = result.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+    
+    // Links: [text](url)
+    result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // Tables: | col1 | col2 | col3 |
+    result = result.replace(/\|(.+)\|/g, function(match, content) {
+      const cells = content.split('|').map(cell => cell.trim());
+      return '<tr>' + cells.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+    });
+    
+    // Handle table separators (|----|----|) and convert to proper table structure
+    result = result.replace(/\|[\s\-:]+\|/g, ''); // Remove separator rows
+    
+    // Wrap consecutive table rows in table tags
+    result = result.replace(/(<tr>.*?<\/tr>(\s*<tr>.*?<\/tr>)*)/g, '<table class="chatbot-widget-table">$1</table>');
+    
+    // Lists: - item or * item
+    result = result.replace(/^[\s]*[-*] (.*$)/gm, '<li>$1</li>');
+    result = result.replace(/(<li>.*<\/li>(\s*<li>.*<\/li>)*)/g, '<ul>$1</ul>');
+    
+    // Numbered lists: 1. item
+    result = result.replace(/^[\s]*\d+\. (.*$)/gm, '<li>$1</li>');
+    result = result.replace(/(<li>.*<\/li>(\s*<li>.*<\/li>)*)/g, '<ol>$1</ol>');
+    
+    // Line breaks (but not inside tables or lists)
+    result = result.replace(/\n/g, '<br>');
+    
+    return result;
   };
 
   // Simple chart renderer for widget
@@ -2068,6 +2268,11 @@
     // Parse markdown for BOT messages only
     if (message.sender_type === 'BOT') {
       content.innerHTML = parseMarkdown(message.message_text);
+      
+      // Check if content contains table and add has-table class
+      if (content.querySelector('.chatbot-widget-table') || content.querySelector('table')) {
+        content.classList.add('has-table');
+      }
     } else {
       content.textContent = message.message_text;
     }
@@ -2104,6 +2309,11 @@
         notesElement.className = 'chatbot-widget-chart-notes';
         notesElement.innerHTML = parseMarkdown(message.chart_notes);
         contentContainer.appendChild(notesElement);
+      }
+      
+      // Check if container has table and add has-table class
+      if (contentContainer.querySelector('.chatbot-widget-table') || contentContainer.querySelector('table')) {
+        contentContainer.classList.add('has-table');
       }
       
       messageElement.appendChild(contentContainer);
@@ -2205,6 +2415,10 @@
             chatHistory.unshift(newConversation);
           }
           activeChat = conversationId;
+          
+          // Show notification that new conversation started
+          // console.log('New conversation started:', conversationId);
+          showConversationStatus();
           
           // Update history view if currently showing
           if (isHistoryView) {
@@ -2380,6 +2594,24 @@
   // Add postMessage event listener
   window.addEventListener('message', handlePostMessage);
   
+  // Function to show current conversation status
+  const showConversationStatus = () => {
+    // if (activeChat) {
+    //   console.log('Currently viewing conversation:', activeChat);
+    //   console.log('Messages in current conversation:', messages.length);
+    // } else {
+    //   console.log('No active conversation (new chat mode)');
+    // }
+    
+    // Show uploaded file status
+    const uploadedFile = fileInput ? fileInput.files[0] : null;
+    // if (uploadedFile) {
+    //   console.log('Uploaded file:', uploadedFile.name, 'Size:', uploadedFile.size);
+    // } else {
+    //   console.log('No file uploaded');
+    // }
+  };
+
   // Expose API
   window.ChatbotWidget = {
     open: () => {
@@ -2415,7 +2647,7 @@
     uploadFile: (file) => {
       if (file && file.type === 'application/pdf') {
         fileName.textContent = file.name;
-        console.log('PDF file uploaded:', file.name);
+        // console.log('PDF file uploaded:', file.name);
         return true;
       } else {
         console.error('Invalid file type. Only PDF files are allowed.');
@@ -2491,6 +2723,50 @@
         // Focus ที่ input
         textarea.focus();
       }
+    },
+    
+    // Get current conversation status
+    getConversationStatus: () => {
+      const uploadedFile = fileInput ? fileInput.files[0] : null;
+      return {
+        activeChat: activeChat,
+        messageCount: messages.length,
+        isHistoryView: isHistoryView,
+        uploadedFile: uploadedFile ? {
+          name: uploadedFile.name,
+          size: uploadedFile.size,
+          type: uploadedFile.type
+        } : null
+      };
+    },
+    
+    // Show current conversation status in console
+    showStatus: () => {
+      showConversationStatus();
+    },
+    
+    // Clear uploaded file
+    clearUploadedFile: () => {
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      if (fileName) {
+        fileName.textContent = '';
+      }
+      // console.log('Uploaded file cleared via API');
+    },
+    
+    // Get uploaded file info
+    getUploadedFileInfo: () => {
+      const uploadedFile = fileInput ? fileInput.files[0] : null;
+      if (uploadedFile) {
+        return {
+          name: uploadedFile.name,
+          size: uploadedFile.size,
+          type: uploadedFile.type
+        };
+      }
+      return null;
     }
   };
 })(); 

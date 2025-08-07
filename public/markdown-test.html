@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .original {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .rendered {
+            background: white;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Markdown Rendering Test</h1>
+    
+    <div class="test-section">
+        <h2>Table Test</h2>
+        <div class="original">
+### 1. KPI หลัก (ด้านการเงิน):
+| มุมมอง (Perspective) | ชื่อ KPI | เป้าหมาย (Target) | หน่วย (UOM) | ผลลัพธ์ (Actual) | คะแนน (Score) | น้ำหนัก (%) | คะแนนรวม (Weight Score) | % บรรลุเป้า (% Achieve) | ความถี่ (Frequency) |
+|----------------------|----------------------|------------------|------------|----------------|--------------|------------|----------------------|----------------------|------------------|
+| ด้านการเงิน | Revenue income | 400.00 | ล้านบาท (MB) | 138.00 | 2.35 | 15.00 | 7.06 | 34.50 | Quarterly (Q1) |
+| ด้านการเงิน | Gross Profit | 100.00 | ล้านบาท (MB) | 40.50 | 2.60 | 40.00 | 20.77 | 40.50 | Half Yearly (1 Half) |
+| ด้านการเงิน | Net Profit | 1,200.00 | ล้านบาท (MB) | 145.00 | 1.45 | 15.00 | 4.34 | 12.08 | Monthly (Jan) |
+| ด้านการเงิน | Increase Sales Volume | 1,200.00 | ล้านบาท (MB) | 0.00 | - | 15.00 | 0.00 | 0.00 | Monthly (Jan) |
+| ด้านการเงิน | ยอดขาย | 400.00 | ล้านบาท (MB) | 0.00 | - | 15.00 | 0.00 | 0.00 | Quarterly (Q1) |
+        </div>
+        <div class="rendered" id="table-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Headers Test</h2>
+        <div class="original">
+# Header 1
+## Header 2
+### Header 3
+        </div>
+        <div class="rendered" id="headers-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Lists Test</h2>
+        <div class="original">
+- Item 1
+- Item 2
+- Item 3
+
+1. Numbered item 1
+2. Numbered item 2
+3. Numbered item 3
+        </div>
+        <div class="rendered" id="lists-test"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Formatting Test</h2>
+        <div class="original">
+**Bold text** and *italic text* and `code text`
+
+[Link text](https://example.com)
+        </div>
+        <div class="rendered" id="formatting-test"></div>
+    </div>
+
+    <script>
+        // Enhanced markdown parser with table support
+        const parseMarkdown = (text) => {
+            if (!text) return '';
+            
+            let result = text;
+            
+            // Headers: ### Header
+            result = result.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+            result = result.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+            result = result.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+            
+            // Bold: **text** or __text__
+            result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            result = result.replace(/__(.*?)__/g, '<strong>$1</strong>');
+            
+            // Italic: *text* or _text_
+            result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            result = result.replace(/_(.*?)_/g, '<em>$1</em>');
+            
+            // Code: `code`
+            result = result.replace(/`(.*?)`/g, '<code>$1</code>');
+            
+            // Code blocks: ```code```
+            result = result.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            
+            // Links: [text](url)
+            result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            
+            // Tables: | col1 | col2 | col3 |
+            result = result.replace(/\|(.+)\|/g, function(match, content) {
+                const cells = content.split('|').map(cell => cell.trim());
+                return '<tr>' + cells.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+            });
+            
+            // Handle table separators (|----|----|) and convert to proper table structure
+            result = result.replace(/\|[\s\-:]+\|/g, ''); // Remove separator rows
+            
+            // Wrap consecutive table rows in table tags
+            result = result.replace(/(<tr>.*?<\/tr>(\s*<tr>.*?<\/tr>)*)/g, '<table class="chatbot-widget-table">$1</table>');
+            
+            // Lists: - item or * item
+            result = result.replace(/^[\s]*[-*] (.*$)/gm, '<li>$1</li>');
+            result = result.replace(/(<li>.*<\/li>(\s*<li>.*<\/li>)*)/g, '<ul>$1</ul>');
+            
+            // Numbered lists: 1. item
+            result = result.replace(/^[\s]*\d+\. (.*$)/gm, '<li>$1</li>');
+            result = result.replace(/(<li>.*<\/li>(\s*<li>.*<\/li>)*)/g, '<ol>$1</ol>');
+            
+            // Line breaks (but not inside tables or lists)
+            result = result.replace(/\n/g, '<br>');
+            
+            return result;
+        };
+
+        // Test data
+        const tableTest = `### 1. KPI หลัก (ด้านการเงิน):
+| มุมมอง (Perspective) | ชื่อ KPI | เป้าหมาย (Target) | หน่วย (UOM) | ผลลัพธ์ (Actual) | คะแนน (Score) | น้ำหนัก (%) | คะแนนรวม (Weight Score) | % บรรลุเป้า (% Achieve) | ความถี่ (Frequency) |
+|----------------------|----------------------|------------------|------------|----------------|--------------|------------|----------------------|----------------------|------------------|
+| ด้านการเงิน | Revenue income | 400.00 | ล้านบาท (MB) | 138.00 | 2.35 | 15.00 | 7.06 | 34.50 | Quarterly (Q1) |
+| ด้านการเงิน | Gross Profit | 100.00 | ล้านบาท (MB) | 40.50 | 2.60 | 40.00 | 20.77 | 40.50 | Half Yearly (1 Half) |
+| ด้านการเงิน | Net Profit | 1,200.00 | ล้านบาท (MB) | 145.00 | 1.45 | 15.00 | 4.34 | 12.08 | Monthly (Jan) |
+| ด้านการเงิน | Increase Sales Volume | 1,200.00 | ล้านบาท (MB) | 0.00 | - | 15.00 | 0.00 | 0.00 | Monthly (Jan) |
+| ด้านการเงิน | ยอดขาย | 400.00 | ล้านบาท (MB) | 0.00 | - | 15.00 | 0.00 | 0.00 | Quarterly (Q1) |`;
+
+        const headersTest = `# Header 1
+## Header 2
+### Header 3`;
+
+        const listsTest = `- Item 1
+- Item 2
+- Item 3
+
+1. Numbered item 1
+2. Numbered item 2
+3. Numbered item 3`;
+
+        const formattingTest = `**Bold text** and *italic text* and \`code text\`
+
+[Link text](https://example.com)`;
+
+        // Render tests
+        const tableTestElement = document.getElementById('table-test');
+        tableTestElement.innerHTML = parseMarkdown(tableTest);
+        if (tableTestElement.querySelector('.chatbot-widget-table') || tableTestElement.querySelector('table')) {
+            tableTestElement.classList.add('has-table');
+        }
+        
+        document.getElementById('headers-test').innerHTML = parseMarkdown(headersTest);
+        document.getElementById('lists-test').innerHTML = parseMarkdown(listsTest);
+        document.getElementById('formatting-test').innerHTML = parseMarkdown(formattingTest);
+    </script>
+
+    <style>
+        /* Table styles */
+        .chatbot-widget-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 12px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Special handling for messages with tables */
+        .has-table {
+            max-width: 90% !important;
+            min-width: 300px;
+            margin-left: 8px;
+        }
+        
+        /* Responsive table handling */
+        @media (max-width: 768px) {
+            .has-table {
+                max-width: 92% !important;
+                min-width: 250px;
+                margin-left: 4px;
+            }
+            
+            .chatbot-widget-table {
+                font-size: 10px;
+            }
+            
+            .chatbot-widget-table td {
+                padding: 4px 6px;
+            }
+        }
+        
+        .chatbot-widget-table tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .chatbot-widget-table tr:last-child {
+            border-bottom: none;
+        }
+        
+        .chatbot-widget-table td {
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+            border-right: 1px solid #f1f5f9;
+        }
+        
+        .chatbot-widget-table td:last-child {
+            border-right: none;
+        }
+        
+        .chatbot-widget-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        .chatbot-widget-table tr:first-child {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        /* List styles */
+        ul, ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+        
+        /* Header styles */
+        h1, h2, h3 {
+            margin: 16px 0 8px 0;
+            color: #1e293b;
+            font-weight: 600;
+        }
+        
+        h1 {
+            font-size: 18px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        
+        h2 {
+            font-size: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 2px;
+        }
+        
+        h3 {
+            font-size: 14px;
+        }
+        
+        /* Code styles */
+        code {
+            background: #f1f5f9;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            color: #dc2626;
+        }
+        
+        pre {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #1e293b;
+            font-size: 0.9em;
+        }
+        
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</body>
+</html> 
