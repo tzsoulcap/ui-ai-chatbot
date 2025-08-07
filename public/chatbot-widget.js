@@ -1400,22 +1400,53 @@
   const deleteChatHistory = async (chatId) => {
     if (confirm('Are you sure you want to delete this chat?')) {
       try {
-        // Remove from local array
-        chatHistory = chatHistory.filter(chat => chat.conversation_id !== chatId);
-        
-        // If this was the active chat, clear it
-        if (activeChat === chatId) {
-          activeChat = null;
-          messages.length = 0;
-          showWelcome();
-        } else {
-          // Refresh history view
-          showChatHistory();
+        // Try DELETE method first, fallback to POST with _method=DELETE
+        let response;
+        try {
+          response = await fetch(`http://192.168.50.119:5678/webhook/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            mode: 'cors'
+          });
+        } catch (deleteError) {
+          // console.warn('DELETE method failed, trying POST with _method=DELETE:', deleteError);
+          // Fallback to POST method with _method=DELETE header
+          response = await fetch(`http://192.168.50.119:5678/webhook/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              '_method': 'DELETE'
+            },
+            mode: 'cors'
+          });
         }
         
-        // console.log('Chat deleted:', chatId);
+        if (response.ok) {
+          // Remove from local array
+          chatHistory = chatHistory.filter(chat => chat.conversation_id !== chatId);
+          
+          // If this was the active chat, clear it
+          if (activeChat === chatId) {
+            activeChat = null;
+            messages.length = 0;
+            showWelcome();
+          } else {
+            // Refresh history view
+            showChatHistory();
+          }
+          
+          console.log('Chat deleted successfully:', chatId);
+        } else {
+          console.error('Failed to delete chat:', response.status, response.statusText);
+          alert('เกิดข้อผิดพลาดในการลบการสนทนา กรุณาลองใหม่อีกครั้ง');
+        }
       } catch (error) {
         console.error('Error deleting chat:', error);
+        alert('เกิดข้อผิดพลาดในการลบการสนทนา กรุณาลองใหม่อีกครั้ง');
       }
     }
   };
