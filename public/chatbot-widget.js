@@ -1321,7 +1321,7 @@
           <div class="chatbot-widget-controls-row">
         <div class="chatbot-widget-mode-selector">
           <select class="chatbot-widget-mode-select">
-            <option value="manual" ${chatMode === 'manual' ? 'selected' : ''} disabled>สอบถามคู่มือ (ปิดใช้งาน)</option>
+            <option value="manual" ${chatMode === 'manual' ? 'selected' : ''}>สอบถามคู่มือ</option>
             <option value="database" ${chatMode === 'database' ? 'selected' : ''} disabled>แชทกับฐานข้อมูล (ปิดใช้งาน)</option>
             <option value="document" ${chatMode === 'document' ? 'selected' : ''}>แชทกับเอกสาร</option>
           </select>
