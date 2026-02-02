@@ -4,7 +4,7 @@
  * 
  * HOW TO USE:
  * 1. Add this script to your website:
- *    <script src="https://your-domain.com/chatbot-widget.js" id="chatbot-widget" data-api-url="http://192.168.50.119:5678/webhook" data-user-id="38137"></script>
+ *    <script src="https://your-domain.com/chatbot-widget.js" id="chatbot-widget" data-api-url="http://192.168.50.119:5679/webhook" data-user-id="38137"></script>
  * 
  * 2. Customize with data attributes:
  *    data-api-url: Base URL for API endpoints (required)
@@ -392,12 +392,12 @@
             formData.append('file', uploadedFile);
             formData.append('file_type', 'pdf');
             
-            // console.log('Sending to endpoint:', `http://192.168.50.119:5678/webhook/${endpoint}`);
+            // console.log('Sending to endpoint:', `http://192.168.50.119:5679/webhook/${endpoint}`);
             
             let response;
             try {
               // Try the direct endpoint first
-              response = await fetch(`http://192.168.50.119:5678/webhook/${endpoint}`, {
+              response = await fetch(`http://192.168.50.119:5679/webhook/${endpoint}`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json'
@@ -432,7 +432,7 @@
         }
         
         // For manual and database modes, use JSON request
-        const response = await fetch(`http://192.168.50.119:5678/webhook/${endpoint}`, {
+        const response = await fetch(`http://192.168.50.119:5679/webhook/${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1566,7 +1566,7 @@
         // Try DELETE method first, fallback to POST with _method=DELETE
         let response;
         try {
-          response = await fetch(`http://192.168.50.119:5678/webhook/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}`, {
+          response = await fetch(`http://192.168.50.119:5679/webhook/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -1577,7 +1577,7 @@
         } catch (deleteError) {
           // console.warn('DELETE method failed, trying POST with _method=DELETE:', deleteError);
           // Fallback to POST method with _method=DELETE header
-          response = await fetch(`http://192.168.50.119:5678/webhook/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}`, {
+          response = await fetch(`http://192.168.50.119:5679/webhook/15c00507-b7de-41d8-97ca-d6e5174c2a98/conversations/${chatId}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
